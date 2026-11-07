@@ -23,11 +23,15 @@ from .db import connect, init_db, insert, q, q1, row_dict
 
 APP_DIR = Path(__file__).parent
 app = FastAPI(title="Skyline BQT – Giám sát tài chính")
-app.add_middleware(SessionMiddleware, secret_key=os.environ.get("SKYLINE_SECRET", secrets.token_hex(32)),
-                   same_site="lax", max_age=8 * 3600)
+DEMO = os.environ.get("SKYLINE_DEMO", "1") == "1"
+_SECRET = os.environ.get("SKYLINE_SECRET")
+if not DEMO and not _SECRET:
+    raise RuntimeError("Chạy thật (SKYLINE_DEMO=0) bắt buộc đặt biến môi trường SKYLINE_SECRET")
+# Chạy thật: cookie đăng nhập chỉ gửi qua HTTPS
+app.add_middleware(SessionMiddleware, secret_key=_SECRET or secrets.token_hex(32),
+                   same_site="lax", max_age=8 * 3600, https_only=not DEMO)
 app.mount("/static", StaticFiles(directory=APP_DIR / "static"), name="static")
 templates = Jinja2Templates(directory=APP_DIR / "templates")
-DEMO = os.environ.get("SKYLINE_DEMO", "1") == "1"
 
 
 def money(n):

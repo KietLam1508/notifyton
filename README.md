@@ -32,6 +32,11 @@ Thanh vàng "Ngày hệ thống" (chỉ có ở bản demo, tắt bằng `SKYLIN
 
 Sao kê tháng 10 quỹ bảo trì có 1 giao dịch lạ 15 triệu chưa giải thích (sẽ thành R-17 sau 5 ngày làm việc).
 
+## Triển khai lên máy chủ
+
+Xem [docs/TRIEN-KHAI.md](docs/TRIEN-KHAI.md): Docker + HTTPS tự động, lệnh khởi tạo dữ liệu thật
+(`python -m app.manage`), tác vụ hằng ngày, sao lưu.
+
 ## Phạm vi đã làm
 
 | PRD | Nội dung | Vị trí code |

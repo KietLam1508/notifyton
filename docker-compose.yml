@@ -1,0 +1,26 @@
+# Cài trên một máy chủ có Docker:  docker compose up -d
+# Biến SKYLINE_SECRET đặt trong file .env cạnh file này (không commit file .env).
+services:
+  skyline:
+    build: .
+    restart: unless-stopped
+    environment:
+      SKYLINE_DEMO: "0"
+      SKYLINE_SECRET: ${SKYLINE_SECRET:?Cần đặt SKYLINE_SECRET trong file .env}
+    volumes:
+      - skyline-data:/data
+    ports:
+      - "127.0.0.1:8000:8000"   # chỉ mở trong máy; ra Internet qua Caddy (HTTPS) bên dưới
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from ${DOMAIN:?Cần đặt DOMAIN trong file .env} --to skyline:8000
+    volumes:
+      - caddy-data:/data
+    depends_on: [skyline]
+
+volumes:
+  skyline-data:
+  caddy-data:
