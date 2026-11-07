@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}Chạy thử rule{% endblock %}
+{% block content %}
+<h1>Chạy thử rule trên dữ liệu lịch sử (F-04)</h1>
+<p class="hint">Trước khi bật một rule hoặc đổi ngưỡng, chạy thử trên {{ result.total }} khoản chi lịch sử (F-00) để ước tính số cảnh báo sẽ phát sinh. Nếu phần lớn là cảnh báo sai, BQT sẽ quen bỏ qua – nên tinh chỉnh ngưỡng trước.</p>
+{% for rid in ['R-09', 'R-18', 'R-11'] %}
+<div class="card"><h2>{{ rid }} · {{ RULES[rid].title }} <span class="badge {{ 'cao' if result[rid] else 'ok' }}">{{ result[rid]|length }} cảnh báo</span></h2>
+  {% for line in result[rid] %}<div class="alert {{ RULES[rid].severity }}">{{ line }}</div>{% else %}<p class="muted">Không phát sinh cảnh báo.</p>{% endfor %}
+</div>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block title %}Danh mục{% endblock %}
+{% block content %}
+<h1>Danh mục nền & khởi tạo dữ liệu</h1>
+{% set tabs = [('quy','Quỹ & tiền gửi'),('ke-hoach','Kế hoạch / dự toán'),('nha-cung-cap','Nhà cung cấp & hợp đồng'),('xung-dot','Xung đột lợi ích'),('kpi','KPI dịch vụ'),('lich-su','Lịch sử chi (F-00)'),('nguoi-dung','Người dùng')] %}
+<div class="actions" style="margin-bottom:12px">{% for k, v in tabs %}<a class="badge {{ 'nhac' if tab == k }}" href="?tab={{ k }}">{{ v }}</a>{% endfor %}</div>
+{% set can_edit = user.role in ('thu_ky','admin') %}
+
+{% if tab == 'quy' %}
+<div class="card table-wrap"><h2>Tài khoản quỹ</h2>
+  <table><tr><th>Quỹ</th><th>Ngân hàng</th><th>Số TK</th><th class="num">Số dư khởi tạo</th><th>Ngày go-live</th><th>Chủ TK</th></tr>
+  {% for f in funds %}<tr><td>{{ f.name }}</td><td>{{ f.bank }}</td><td>{{ f.account_no }} {% if f.account_locked %}🔒 <small>khóa (R-24)</small>{% endif %}</td>
+    <td class="num">{{ f.opening_balance|money }}</td><td>{{ f.opening_date|vndate }}</td>
+    <td>{{ signers|selectattr('fund_code','equalto',f.code)|map(attribute='full_name')|join(', ') }}</td></tr>{% endfor %}</table>
+  <p class="muted">Đổi số tài khoản: vào <a href="/cau-hinh">Cấu hình</a> (cần văn bản căn cứ và toàn bộ chủ TK duyệt).</p>
+  <h3>Xác nhận dữ liệu khởi tạo F-00</h3>
+  {% for s in signoffs %}<div>✓ {{ s.full_name }} · {{ s.signed_at|vndate }} · {{ s.note }}</div>{% endfor %}
+</div>
+<div class="card table-wrap"><h2>Tiền gửi có kỳ hạn</h2>
+  <table><tr><th>Quỹ</th><th>Ngân hàng</th><th class="num">Số tiền</th><th>Lãi suất</th><th>Ngày gửi</th><th>Đáo hạn</th><th>Trạng thái</th></tr>
+  {% for d in deposits %}<tr><td>{{ d.fund_code }}</td><td>{{ d.bank }}</td><td class="num">{{ d.amount|money }}</td><td>{{ d.rate }}%</td><td>{{ d.start_date|vndate }}</td><td>{{ d.maturity_date|vndate }}</td><td>{{ d.status }}</td></tr>{% endfor %}</table>
+  {% if can_edit %}<details><summary>Thêm khoản tiền gửi</summary><form method="post" action="/danh-muc/tien-gui" class="row">
+    <div><label>Quỹ</label><select name="fund_code"><option>BT</option><option>VH</option></select></div>
+    <div><label>Ngân hàng</label><input type="text" name="bank" required></div><div><label>Số tiền</label><input type="number" name="amount" required></div>
+    <div><label>Lãi suất %</label><input type="number" step="0.01" name="rate" required></div><div><label>Ngày gửi</label><input type="date" name="start_date" required></div>
+    <div><label>Đáo hạn</label><input type="date" name="maturity_date" required></div><div><label>&nbsp;</label><button>Lưu</button></div></form></details>{% endif %}
+</div>
+{% endif %}
+
+{% if tab == 'ke-hoach' %}
+{% for p in plans %}
+<div class="card table-wrap"><h2>{{ FUNDS[p.fund_code] }} {{ p.year }} · phiên bản {{ p.version }}</h2>
+  <p class="muted">Nghị quyết {{ p.resolution_no }} ngày {{ p.resolution_date|vndate }} · hiệu lực từ {{ p.effective_from|vndate }}</p>
+  <table><tr><th>Mã</th><th>Hạng mục</th><th class="num">Dự toán</th><th class="num">Đã chi trước go-live</th></tr>
+  {% for i in all_items if i.plan_id == p.id %}<tr><td>{{ i.code }}</td><td>{{ i.name }}</td><td class="num">{{ i.budget|money }}</td><td class="num">{{ i.spent_before_golive|money }}</td></tr>{% endfor %}</table>
+</div>
+{% endfor %}
+{% if can_edit %}
+<form class="card" method="post" action="/danh-muc/ke-hoach" enctype="multipart/form-data">
+  <h2>Thêm phiên bản kế hoạch (điều chỉnh giữa năm)</h2>
+  <div class="row"><div><label>Quỹ</label><select name="fund_code"><option value="BT">Quỹ bảo trì</option><option value="VH">Quỹ vận hành</option></select></div>
+    <div><label>Năm</label><input type="number" name="year" value="{{ today.year }}"></div>
+    <div><label>Số nghị quyết Hội nghị *</label><input type="text" name="resolution_no" required></div>
+    <div><label>Ngày nghị quyết *</label><input type="date" name="resolution_date" required></div>
+    <div><label>Hiệu lực từ</label><input type="date" name="effective_from"></div></div>
+  <label>Hạng mục (mỗi dòng: mã, tên, dự toán, đã chi trước go-live) – giữ nguyên mã để nối lũy kế</label>
+  <textarea name="items" rows="5" placeholder="BT-01,Bảo trì thang máy,800000000,320000000"></textarea>
+  <label>File nghị quyết</label><input type="file" name="file">
+  <p><button>Lưu phiên bản mới</button></p>
+</form>
+{% endif %}
+{% endif %}
+
+{% if tab == 'nha-cung-cap' %}
+<div class="card table-wrap"><h2>Nhà cung cấp</h2>
+  <table><tr><th>Tên</th><th>MST</th><th>Tài khoản</th></tr>{% for v in vendors %}<tr><td>{{ v.name }}</td><td>{{ v.tax_code }}</td><td>{{ v.bank_name }} {{ v.bank_account }}</td></tr>{% endfor %}</table>
+  {% if can_edit %}<details><summary>Thêm nhà cung cấp</summary><form method="post" action="/danh-muc/nha-cung-cap" class="row">
+    <div><label>Tên</label><input type="text" name="name" required></div><div><label>MST</label><input type="text" name="tax_code" required></div>
+    <div><label>Ngân hàng</label><input type="text" name="bank_name"></div><div><label>Số TK</label><input type="text" name="bank_account"></div>
+    <div><label>&nbsp;</label><button>Lưu</button></div></form></details>{% endif %}
+</div>
+<div class="card table-wrap"><h2>Hợp đồng</h2>
+  <table><tr><th>Số HĐ</th><th>Nhà cung cấp</th><th>Quỹ</th><th class="num">Giá trị (gồm PL)</th><th>Ký ngày</th><th>TK thụ hưởng</th><th>Tạm ứng</th><th class="num">Đã trả trước go-live</th><th>Đợt</th></tr>
+  {% for c in contracts %}<tr><td>{{ c.contract_no }}<br><small>{{ c.title }}</small></td><td>{{ c.vendor_name }}</td><td>{{ c.fund_code }}</td>
+    <td class="num">{{ (c.value + c.addendum_value)|money }}</td><td>{{ c.signed_date|vndate if c.signed_date else 'chưa ký' }}</td><td>{{ c.beneficiary_account }}</td>
+    <td>{{ c.advance_pct|int }}%</td><td class="num">{{ c.paid_before_golive|money }}</td>
+    <td><small>{% for i in installments if i.contract_id == c.id %}{{ i.name }}: {{ i.amount|money }}<br>{% endfor %}</small></td></tr>{% endfor %}</table>
+  <p class="muted">Đổi tài khoản thụ hưởng của hợp đồng phải qua <a href="/cau-hinh">đề xuất & duyệt</a> (chống gian lận đổi số tài khoản).</p>
+  {% if can_edit %}<details><summary>Thêm hợp đồng</summary><form method="post" action="/danh-muc/hop-dong" class="row">
+    <div><label>Nhà cung cấp</label><select name="vendor_id">{% for v in vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}</select></div>
+    <div><label>Quỹ</label><select name="fund_code"><option>BT</option><option>VH</option></select></div>
+    <div><label>Số HĐ</label><input type="text" name="contract_no" required></div><div><label>Tên</label><input type="text" name="title" required></div>
+    <div><label>Giá trị</label><input type="number" name="value" required></div><div><label>Giá trị phụ lục</label><input type="number" name="addendum_value"></div>
+    <div><label>Ngày ký</label><input type="date" name="signed_date"></div><div><label>TK thụ hưởng</label><input type="text" name="beneficiary_account" required></div>
+    <div><label>% tạm ứng</label><input type="number" name="advance_pct"></div><div><label>Đã trả trước go-live</label><input type="number" name="paid_before_golive"></div>
+    <div><label>Ngưỡng KPI (HĐ QLVH)</label><input type="number" name="kpi_threshold"></div>
+    <div><label class="check"><input type="checkbox" name="is_mgmt_contract" value="1"> HĐ QLVH</label></div>
+    <div><label>&nbsp;</label><button>Lưu</button></div></form></details>
+  <details><summary>Thêm đợt thanh toán</summary><form method="post" action="/danh-muc/dot-thanh-toan" class="row">
+    <div><label>Hợp đồng</label><select name="contract_id">{% for c in contracts %}<option value="{{ c.id }}">{{ c.contract_no }}</option>{% endfor %}</select></div>
+    <div><label>Thứ tự</label><input type="number" name="seq" required></div><div><label>Tên đợt</label><input type="text" name="name" required></div>
+    <div><label>Số tiền</label><input type="number" name="amount" required></div><div><label>&nbsp;</label><button>Lưu</button></div></form></details>{% endif %}
+</div>
+{% endif %}
+
+{% if tab == 'xung-dot' %}
+<div class="card table-wrap"><h2>Khai báo xung đột lợi ích (R-12)</h2>
+  <table><tr><th>Người</th><th>Vai trò</th><th>Nhà cung cấp</th><th>Ghi chú</th><th>Ngày</th></tr>
+  {% for c in conflicts %}<tr><td>{{ c.full_name }}</td><td>{{ ROLES[c.role] }}</td><td>{{ c.vendor_name }}</td><td>{{ c.note }}</td><td>{{ c.declared_at|vndate }}</td></tr>{% else %}<tr><td class="muted">Chưa có.</td></tr>{% endfor %}</table>
+  {% if can_edit %}<details><summary>Thêm khai báo</summary><form method="post" action="/danh-muc/xung-dot" class="row">
+    <div><label>Người</label><select name="user_id">{% for u in users if u.role in ('bqt','bql') %}<option value="{{ u.id }}">{{ u.full_name }}</option>{% endfor %}</select></div>
+    <div><label>Nhà cung cấp</label><select name="vendor_id">{% for v in vendors %}<option value="{{ v.id }}">{{ v.name }}</option>{% endfor %}</select></div>
+    <div><label>Ghi chú</label><input type="text" name="note"></div><div><label>&nbsp;</label><button>Lưu</button></div></form></details>{% endif %}
+</div>
+{% endif %}
+
+{% if tab == 'kpi' %}
+<div class="card table-wrap"><h2>Điểm KPI dịch vụ QLVH theo tháng (R-15, P1 rút gọn)</h2>
+  <table><tr><th>Tháng</th><th>BQL tự chấm</th><th>BQT kiểm tra</th><th>Ghi chú</th></tr>
+  {% for k in kpis %}<tr><td>{{ k.month }}</td><td>{{ k.self_score }}</td><td><b>{{ k.bqt_score }}</b></td><td>{{ k.note or '' }}</td></tr>{% endfor %}</table>
+  {% if can_edit %}<details><summary>Nhập điểm tháng</summary><form method="post" action="/danh-muc/kpi" class="row">
+    <div><label>Tháng</label><input type="month" name="month" required></div><div><label>BQL tự chấm</label><input type="number" step="0.1" name="self_score"></div>
+    <div><label>BQT kiểm tra</label><input type="number" step="0.1" name="bqt_score"></div><div><label>Ghi chú</label><input type="text" name="note"></div>
+    <div><label>&nbsp;</label><button>Lưu</button></div></form></details>{% endif %}
+</div>
+{% endif %}
+
+{% if tab == 'lich-su' %}
+<div class="card table-wrap"><h2>Lịch sử chi 12 tháng trước go-live</h2>
+  <p class="muted">Dùng cho lũy kế dự toán (R-08), lịch sử giá (R-11), hóa đơn trùng (R-18) và <a href="/chay-thu">chạy thử rule</a>.</p>
+  <table><tr><th>Ngày</th><th>Nhà cung cấp</th><th>Hạng mục</th><th class="num">Số tiền</th><th>Số HĐ</th></tr>
+  {% for h in history %}<tr><td>{{ h.pay_date|vndate }}</td><td>{{ h.vendor_name }}<br><small>MST {{ h.vendor_tax_code }}</small></td><td>{{ h.plan_item_code or '' }}</td><td class="num">{{ h.amount|money }}</td><td>{{ h.invoice_no or '' }}</td></tr>{% endfor %}</table>
+  {% if can_edit %}<details><summary>Nhập thêm (CSV)</summary><form method="post" action="/danh-muc/nhap/lich-su">
+    <label>Mỗi dòng: quỹ, tên NCC, MST, mã hạng mục, số tiền, ngày (YYYY-MM-DD), số hóa đơn</label>
+    <textarea name="rows" rows="5" placeholder="BT,Công ty A,0301234567,BT-01,15000000,2026-05-10,0000123"></textarea><p><button>Nhập</button></p></form></details>{% endif %}
+</div>
+{% endif %}
+
+{% if tab == 'nguoi-dung' %}
+<div class="card table-wrap"><h2>Người dùng & phân quyền</h2>
+  <table><tr><th>Tên đăng nhập</th><th>Họ tên</th><th>Vai trò</th><th>Trưởng ban</th><th>Chủ TK</th></tr>
+  {% for u in users %}<tr><td>{{ u.username }}</td><td>{{ u.full_name }}</td><td>{{ ROLES[u.role] }}</td><td>{{ '✓' if u.is_chair }}</td><td>{{ '✓' if u.is_account_holder }}</td></tr>{% endfor %}</table>
+  <p class="muted">Nguyên tắc tách quyền: người cấu hình ≠ người ký UNC; người upload sao kê ≠ người duyệt phân loại; BQL lập tờ trình ≠ người xác nhận nghiệm thu.</p>
+</div>
+{% endif %}
+{% endblock %}

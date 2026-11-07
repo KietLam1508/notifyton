@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block title %}Nhật ký{% endblock %}
+{% block content %}
+<h1>Nhật ký kiểm toán</h1>
+{% if ok %}<div class="flash ok">✓ Chuỗi băm toàn vẹn ({{ total }} dòng). Nhật ký không sửa/xóa được, kể cả quản trị hệ thống.</div>
+{% else %}<div class="flash error">⚠ Chuỗi băm bị phá vỡ tại dòng #{{ bad }} – dữ liệu đã bị sửa ngoài ứng dụng.</div>{% endif %}
+<div class="card table-wrap">
+<table><tr><th>#</th><th>Thời điểm</th><th>Người</th><th>Hành động</th><th>Đối tượng</th><th>Trước → Sau</th></tr>
+{% for r in rows %}<tr><td>{{ r.id }}</td><td><small>{{ r.ts|vndate }}</small></td><td>{{ names.get(r.user_id, 'Hệ thống') }}</td><td>{{ r.action }}</td>
+  <td><small>{{ r.entity }} {{ r.entity_id or '' }}</small></td>
+  <td><details><summary><small>xem</small></summary><small><code style="white-space:pre-wrap;word-break:break-all">{{ r.before_json or '—' }}</code> → <code style="white-space:pre-wrap;word-break:break-all">{{ r.after_json or '—' }}</code></small></details></td></tr>{% endfor %}
+</table></div>
+<div class="actions">{% if page > 1 %}<a href="?page={{ page - 1 }}">← Mới hơn</a>{% endif %}{% if page * 100 < total %}<a href="?page={{ page + 1 }}">Cũ hơn →</a>{% endif %}</div>
+{% endblock %}

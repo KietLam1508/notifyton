@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}Skyline BQT{% endblock %} · Giám sát tài chính</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+{% if user %}
+<div class="topbar">
+  <a class="brand" href="/">🏢 Skyline BQT</a>
+  <span class="spacer"></span>
+  <a class="bell" href="/thong-bao" title="Thông báo">🔔{% if unread %}<b>{{ unread }}</b>{% endif %}</a>
+  <div class="who">{{ user.full_name }}<br><small style="color:#dbe7f3">{{ ROLES[user.role] }}{% if user.is_account_holder %} · Chủ TK{% endif %}</small></div>
+  <a href="/dang-xuat" title="Đăng xuất">⏻</a>
+</div>
+{% set path = request.url.path %}
+<nav class="main">
+  {% if user.role != 'bql' %}<a href="/" class="{{ 'on' if path == '/' }}">Tổng quan</a>{% endif %}
+  <a href="/to-trinh" class="{{ 'on' if path.startswith('/to-trinh') }}">Tờ trình</a>
+  {% if user.role != 'bql' %}
+  <a href="/canh-bao" class="{{ 'on' if path.startswith('/canh-bao') }}">Cảnh báo</a>
+  <a href="/sao-ke" class="{{ 'on' if path.startswith('/sao-ke') }}">Sao kê & đối soát</a>
+  <a href="/danh-muc" class="{{ 'on' if path.startswith('/danh-muc') }}">Danh mục</a>
+  <a href="/cau-hinh" class="{{ 'on' if path.startswith('/cau-hinh') }}">Cấu hình & rule</a>
+  <a href="/chay-thu" class="{{ 'on' if path.startswith('/chay-thu') }}">Chạy thử rule</a>
+  <a href="/nhat-ky" class="{{ 'on' if path.startswith('/nhat-ky') }}">Nhật ký</a>
+  {% endif %}
+</nav>
+{% if DEMO %}
+<form class="demo-bar" method="post" action="/he-thong/ngay">
+  <span>⚙️ Bản demo · Ngày hệ thống: <b>{{ today.strftime('%d/%m/%Y') }}</b></span>
+  <input type="date" name="day" value="{{ today.isoformat() }}">
+  <button class="small secondary" type="submit">Đổi ngày</button>
+  <span class="muted">(dùng để thử hạn biểu quyết, R-16, R-17, R-22)</span>
+</form>
+{% endif %}
+{% endif %}
+<main>
+{% for m in messages %}
+  <div class="flash {{ m.kind }}">{{ m.msg }}{% if m.details %}<ul>{% for d in m.details %}<li>{{ d }}</li>{% endfor %}</ul>{% endif %}</div>
+{% endfor %}
+{% block content %}{% endblock %}
+</main>
+</body>
+</html>

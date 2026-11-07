@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+{% block title %}Sao kê{% endblock %}
+{% block content %}
+<h1>Sao kê & đối soát</h1>
+{% if user.role == 'thu_ky' %}
+<form class="card" method="post" action="/sao-ke" enctype="multipart/form-data">
+  <h2>Upload sao kê</h2>
+  <p class="muted">Chỉ nhận <b>file xuất gốc</b> từ ngân hàng và phải nối tiếp kỳ trước (R-23). Định dạng tạm thời: <a href="/sao-ke/mau.csv">tải file mẫu</a> (chờ Q4 – ngân hàng thật).</p>
+  <div class="row"><div><label>Quỹ</label><select name="fund_code">{% for k, v in FUNDS.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div><label>File</label><input type="file" name="file" accept=".csv" required></div></div>
+  <p><button>Upload & đối soát</button></p>
+</form>
+{% else %}<p class="hint">Thư ký/kế toán BQT upload sao kê; chủ tài khoản duyệt phân loại (người upload ≠ người duyệt).</p>{% endif %}
+<div class="card table-wrap">
+  <table><tr><th>Quỹ</th><th>Kỳ</th><th class="num">Đầu kỳ</th><th class="num">Cuối kỳ</th><th>Giao dịch</th><th>Upload</th></tr>
+  {% for s in rows %}
+  <tr><td>{{ FUNDS[s.fund_code] }}</td><td><a href="/sao-ke/{{ s.id }}">{{ s.period_from|vndate }} → {{ s.period_to|vndate }}</a></td>
+    <td class="num">{{ s.opening_balance|money }}</td><td class="num">{{ s.closing_balance|money }}</td>
+    <td>{{ s.n }} {% if s.pending %}<span class="badge cao">{{ s.pending }} chưa giải thích xong</span>{% else %}<span class="badge ok">đủ</span>{% endif %}</td>
+    <td><small>{{ s.uploaded_at|vndate }}</small></td></tr>
+  {% else %}<tr><td colspan="6" class="muted">Chưa có sao kê.</td></tr>{% endfor %}</table>
+</div>
+{% if rejected %}
+<div class="card"><h2>File bị từ chối gần đây (R-23)</h2>
+  {% for r in rejected %}<div class="alert chan"><b>{{ r.filename }}</b> · {{ r.uploaded_at|vndate }}<div class="meta" style="white-space:pre-line">{{ r.reasons }}</div></div>{% endfor %}
+</div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+{% block title %}Tổng quan{% endblock %}
+{% block content %}
+<h1>Tổng quan quỹ</h1>
+
+{% if my_votes %}
+<div class="card" style="border-color:var(--brand)">
+  <h2>🗳️ Bạn có {{ my_votes|length }} tờ trình chờ biểu quyết</h2>
+  {% for s in my_votes %}<div><a href="/to-trinh/{{ s.id }}"><b>{{ s.code }}</b></a> · {{ s.amount|money }} · hạn {{ s.vote_deadline|vndate }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="grid c2">
+{% for f in funds %}
+  <div class="card">
+    <h2>{{ f.fund.name }} <small>· {{ f.fund.bank }} · TK {{ f.fund.account_no }}{% if f.fund.account_locked %} 🔒{% endif %}</small></h2>
+    <div class="stat">{{ f.total|money }}</div>
+    <div class="stat-label">Tổng quỹ = số dư tài khoản + tiền gửi có kỳ hạn + lãi chưa sử dụng</div>
+    <table style="margin-top:8px">
+      <tr><td>Số dư tài khoản thanh toán <small>(sao kê đến {{ f.balance_date|vndate }})</small></td><td class="num">{{ f.balance|money }}</td></tr>
+      <tr><td>Tiền gửi có kỳ hạn</td><td class="num">{{ f.deposits|money }}</td></tr>
+      <tr><td>Lãi đã nhận chưa sử dụng</td><td class="num">{{ f.interest|money }}</td></tr>
+    </table>
+  </div>
+{% endfor %}
+</div>
+
+<div class="grid c4">
+  <a class="card" href="/canh-bao"><div class="stat" style="color:var(--red)">{{ alert_counts.chan }}</div><div class="stat-label">Cảnh báo Chặn đang mở</div></a>
+  <a class="card" href="/canh-bao"><div class="stat" style="color:var(--orange)">{{ alert_counts.cao }}</div><div class="stat-label">Cảnh báo Cao chờ xử lý</div></a>
+  <a class="card" href="/canh-bao"><div class="stat" style="color:var(--yellow)">{{ alert_counts.tb }}</div><div class="stat-label">Cảnh báo Trung bình</div></a>
+  <a class="card" href="/canh-bao"><div class="stat" style="color:var(--brand)">{{ alert_counts.nhac }}</div><div class="stat-label">Nhắc việc</div></a>
+</div>
+
+{% if reminders %}
+<div class="card"><h2>⏰ Nhắc việc (R-16)</h2>
+  {% for r in reminders %}<div class="alert nhac">{{ r.message }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="card">
+  <h2>Tờ trình theo trạng thái</h2>
+  <div class="actions">
+  {% for k, label in STATUS.items() %}{% if counts[k] %}
+    <a class="badge {{ k }}" href="/to-trinh?status={{ k }}">{{ label }}: {{ counts[k] }}</a>
+  {% endif %}{% endfor %}
+  </div>
+</div>
+
+{% for code, (plan, rows) in budgets.items() %}
+<div class="card">
+  <h2>Lũy kế chi so với {{ 'kế hoạch bảo trì' if code == 'BT' else 'dự toán vận hành' }}
+    {% if plan %}<small>· năm {{ plan.year }} · phiên bản {{ plan.version }} · NQ {{ plan.resolution_no }}</small>{% endif %}</h2>
+  {% if not plan %}<p class="muted">Chưa có kế hoạch/dự toán hiệu lực.</p>{% else %}
+  <div class="table-wrap"><table>
+    <tr><th>Hạng mục</th><th class="num">Dự toán</th><th class="num">Trước go-live</th><th class="num">Từ go-live</th><th class="num">Lũy kế</th><th>Tỷ lệ</th></tr>
+    {% for r in rows %}
+    <tr><td><b>{{ r.code }}</b> {{ r.name }}</td><td class="num">{{ r.budget|money }}</td><td class="num">{{ r.spent_before_golive|money }}</td>
+      <td class="num">{{ r.since|money }}</td><td class="num">{{ r.total|money }}</td>
+      <td><div class="bar {{ r.level }}"><i style="width:{{ [r.ratio,100]|min }}%"></i></div><small>{{ '%.0f'|format(r.ratio) }}%</small></td></tr>
+    {% endfor %}
+  </table></div>
+  <small class="muted">Vàng: chạm 100% dự toán · Đỏ: vượt ngưỡng R-08</small>
+  {% endif %}
+</div>
+{% endfor %}
+
+<div class="grid c2">
+  <div class="card">
+    <h2>Khoản đột xuất chờ báo cáo Hội nghị</h2>
+    {% for s in emergencies %}<div><a href="/to-trinh/{{ s.id }}">{{ s.code }}</a> · {{ s.amount|money }} · {{ s.reason }}</div>
+    {% else %}<p class="muted">Không có.</p>{% endfor %}
+  </div>
+  <div class="card">
+    <h2>Tiền gửi có kỳ hạn</h2>
+    <table>{% for d in deposits %}
+      <tr><td>{{ d.bank }} ({{ d.fund_code }}) · {{ d.rate }}%</td><td class="num">{{ d.amount|money }}</td>
+        <td>{{ d.maturity_date|vndate }} {% if d.days_left <= 7 %}<span class="badge cao">còn {{ d.days_left }} ngày</span>{% endif %}</td></tr>
+    {% else %}<tr><td class="muted">Không có.</td></tr>{% endfor %}</table>
+  </div>
+</div>
+
+<div class="card">
+  <h2>Chỉ số theo dõi (mục 12 PRD)</h2>
+  <div class="grid c3">
+    <div><div class="stat">{{ metrics.r21_month }}</div><div class="stat-label">Giao dịch "chi trước, duyệt sau" tháng này (mục tiêu 0)</div></div>
+    <div><div class="stat">{{ '%.0f%%'|format(metrics.explained_pct) if metrics.explained_pct is not none else '—' }}</div><div class="stat-label">Giao dịch sao kê đã khớp/phân loại (mục tiêu 100%)</div></div>
+    <div><div class="stat">{{ '%.0f%%'|format(metrics.false_positive_pct) if metrics.false_positive_pct is not none else '—' }}</div><div class="stat-label">Cảnh báo Cao bị đánh giá "cảnh báo sai" (ràng buộc &lt; 30%)</div></div>
+    <div><div class="stat">{{ '%.0f%%'|format(metrics.votes_on_time_pct) if metrics.votes_on_time_pct is not none else '—' }}</div><div class="stat-label">Phiếu biểu quyết trong hạn (mục tiêu ≥ 80%)</div></div>
+    <div><div class="stat">{{ '%.1f ngày'|format(metrics.avg_days_to_sign) if metrics.avg_days_to_sign is not none else '—' }}</div><div class="stat-label">Thời gian trung bình từ nộp đến ký UNC</div></div>
+    <div><div class="stat">{{ metrics.returned_month }}</div><div class="stat-label">Lần tờ trình bị trả về bổ sung tháng này</div></div>
+  </div>
+</div>
+
+<div class="actions">
+  <form method="post" action="/he-thong/chay-lich"><button class="secondary small">Chạy tác vụ theo lịch</button></form>
+  {% if user.role in ('bqt','admin') %}<a class="btn secondary small" href="/xuat-du-lieu">Xuất toàn bộ dữ liệu (CSV)</a>{% endif %}
+</div>
+{% endblock %}

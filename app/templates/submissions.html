@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Tờ trình{% endblock %}
+{% block content %}
+<div class="actions" style="justify-content:space-between;align-items:center">
+  <h1>Tờ trình</h1>
+  {% if user.role == 'bql' %}<a class="btn" href="/to-trinh/moi">+ Tạo tờ trình</a>{% endif %}
+</div>
+<form class="row card" method="get">
+  <div><label>Trạng thái</label><select name="status" onchange="this.form.submit()"><option value="">Tất cả (trừ đã hủy)</option>
+    {% for k, v in STATUS.items() %}<option value="{{ k }}" {{ 'selected' if k == status }}>{{ v }}</option>{% endfor %}</select></div>
+  <div><label>Quỹ</label><select name="fund" onchange="this.form.submit()"><option value="">Cả hai quỹ</option>
+    {% for k, v in FUNDS.items() %}<option value="{{ k }}" {{ 'selected' if k == fund }}>{{ v }}</option>{% endfor %}</select></div>
+</form>
+<div class="card table-wrap">
+<table>
+  <tr><th>Mã</th><th>Nội dung</th><th class="num">Số tiền</th><th>Trạng thái</th><th>Cảnh báo</th></tr>
+  {% for r in rows %}
+  <tr>
+    <td><a href="/to-trinh/{{ r.id }}"><b>{{ r.code }}</b></a>{% if r.version > 1 %} <small>v{{ r.version }}</small>{% endif %}<br>
+      <small>{{ FUNDS[r.fund_code] }}{% if r.is_emergency %} · <b>đột xuất</b>{% endif %}</small></td>
+    <td>{{ r.reason }}<br><small>{{ r.vendor_name }}</small></td>
+    <td class="num">{{ r.amount|money }}</td>
+    <td><span class="badge {{ r.status }}">{{ STATUS[r.status] }}</span>
+      {% if r.status == 'cho_bieu_quyet' %}<br><small>hạn {{ r.vote_deadline|vndate }}</small>{% endif %}</td>
+    <td>{% for a in r.alerts if (user.role != 'bql' or a.checkpoint == 'CP1') %}<span class="badge {{ a.status if a.status == 'accepted' else a.severity }}" title="{{ a.message }}">{{ a.rule_id }}</span> {% endfor %}</td>
+  </tr>
+  {% else %}<tr><td colspan="5" class="muted">Chưa có tờ trình.</td></tr>{% endfor %}
+</table>
+</div>
+{% endblock %}

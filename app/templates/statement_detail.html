@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Sao kê {{ st.period_from }}{% endblock %}
+{% block content %}
+<h1>Sao kê {{ FUNDS[st.fund_code] }} · {{ st.period_from|vndate }} → {{ st.period_to|vndate }}</h1>
+<p class="muted">Đầu kỳ {{ st.opening_balance|money }} · Cuối kỳ {{ st.closing_balance|money }} · {{ st.filename }} · upload bởi {{ names[st.uploaded_by] }}</p>
+<p class="hint">Thứ tự khớp: (1) mã tờ trình trong nội dung chuyển khoản → (2) số tiền + tài khoản thụ hưởng + khoảng ngày từ "Sẵn sàng ký" → không chắc chắn thì đề xuất để người dùng xác nhận. Giao dịch không phải chi nhà cung cấp: thư ký phân loại, chủ TK duyệt.</p>
+{% for t in txns %}
+<div class="card">
+  <div class="actions" style="justify-content:space-between">
+    <div><b>{{ t.txn_date|vndate }}</b> · <code>{{ t.bank_ref }}</code> · <span style="color:{{ 'var(--red)' if t.amount < 0 else 'var(--green)' }};font-weight:700">{{ t.amount|money }}</span><br>
+      {{ t.description }}{% if t.counter_account %} <small class="muted">· TK đối ứng {{ t.counter_account }}</small>{% endif %}</div>
+    <span class="badge {{ 'ok' if t.match_status in ('da_khop','da_phan_loai') else ('cao' if t.match_status == 'chua_khop' else 'tb') }}">{{ MATCH_STATUS[t.match_status] }}</span>
+  </div>
+  {% if t.sub_code %}<div>Tờ trình: <a href="/to-trinh/{{ t.submission_id }}">{{ t.sub_code }}</a> {% if t.match_method %}<small class="muted">({{ {'ma_to_trinh':'theo mã tờ trình','tu_dong':'theo số tiền + TK + ngày','xac_nhan':'người dùng xác nhận'}[t.match_method] }})</small>{% endif %}</div>{% endif %}
+  {% if t.category %}<div>Phân loại: <b>{{ TXN_CATEGORY[t.category] }}</b> {{ t.category_note or '' }} <small class="muted">· đề xuất {{ names.get(t.classified_by, '') }}{% if t.approved_by %} · duyệt {{ names[t.approved_by] }}{% endif %}</small></div>
+  {% elif t.category_note %}<div class="muted">{{ t.category_note }}</div>{% endif %}
+
+  {% if t.match_status in ('chua_khop','de_xuat') %}
+  <div class="actions" style="margin-top:6px">
+    {% if t.amount < 0 and user.role in ('bqt','thu_ky') %}
+    <form method="post" action="/giao-dich/{{ t.id }}/xac-nhan-khop" class="actions">
+      <select name="submission_id" style="width:auto">{% for c in candidates %}<option value="{{ c.id }}" {{ 'selected' if c.id == t.submission_id }}>{{ c.code }} · {{ c.amount|money }} · {{ STATUS[c.status] }}</option>{% endfor %}
+        {% if t.submission_id and t.submission_id not in candidates|map(attribute='id')|list %}<option value="{{ t.submission_id }}" selected>{{ t.sub_code }}</option>{% endif %}</select>
+      <button class="small secondary">Xác nhận khớp</button></form>
+    {% endif %}
+    {% if user.role == 'thu_ky' %}
+    <form method="post" action="/giao-dich/{{ t.id }}/phan-loai" class="actions">
+      <select name="category" style="width:auto">{% for k, v in TXN_CATEGORY.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select>
+      <input type="text" name="note" placeholder="Ghi chú" style="width:160px"><button class="small secondary">Phân loại</button></form>
+    {% endif %}
+  </div>
+  {% endif %}
+  {% if t.match_status == 'de_xuat_phan_loai' and is_signer %}
+  <div class="actions" style="margin-top:6px">
+    <form method="post" action="/giao-dich/{{ t.id }}/duyet-phan-loai"><button class="small">Chủ TK duyệt phân loại</button></form>
+    <form method="post" action="/giao-dich/{{ t.id }}/tra-lai"><button class="small secondary">Trả lại</button></form>
+  </div>
+  {% endif %}
+</div>
+{% endfor %}
+{% endblock %}

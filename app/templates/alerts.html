@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+{% block title %}Cảnh báo{% endblock %}
+{% block content %}
+<div class="actions" style="justify-content:space-between;align-items:center">
+  <h1>Cảnh báo</h1>
+  <div class="actions"><a class="badge {{ 'nhac' if show == 'open' }}" href="?show=open">Đang mở</a><a class="badge {{ 'nhac' if show == 'all' }}" href="?show=all">Tất cả</a></div>
+</div>
+<p class="muted">Chặn: không thể chuyển bước · Cao: phải ghi lý do và được chủ TK xác nhận · Trung bình: hiển thị · Nhắc việc: theo lịch</p>
+{% for a in rows %}{% set r = RULES[a.rule_id] %}
+<div class="alert {{ 'accepted' if a.status == 'accepted' else a.severity }}" style="{{ 'opacity:.55' if a.status == 'resolved' }}">
+  <span class="badge {{ a.severity }}">{{ SEVERITY[a.severity] }}</span> <b>{{ a.rule_id }}</b>
+  {% if a.code %}· <a href="/to-trinh/{{ a.submission_id }}">{{ a.code }}</a>{% endif %}
+  {% if a.statement_txn_id %}· <a href="/sao-ke">giao dịch sao kê #{{ a.statement_txn_id }}</a>{% endif %}
+  · {{ a.message }}
+  <div class="meta">{{ a.checkpoint }} · {{ a.created_at|vndate }} · Nguồn {{ r.source_label }} · {{ r.basis }}
+    {% if a.status == 'resolved' %} · đã hết (dữ liệu đã sửa){% endif %}
+    {% if a.status == 'accepted' %} · ✓ {{ names[a.accepted_by] }}: "{{ a.accept_reason }}", chủ TK {{ names[a.confirmed_by] }} xác nhận{% endif %}</div>
+  {% if a.severity == 'cao' and a.status == 'open' %}
+    {% if a.accept_reason %}<div class="meta">Lý do của {{ names[a.accepted_by] }}: "{{ a.accept_reason }}" – chờ chủ TK xác nhận</div>
+      {% if user.is_account_holder %}<form method="post" action="/canh-bao/{{ a.id }}/xac-nhan"><button class="small">Chủ TK xác nhận</button></form>{% endif %}
+    {% elif user.role == 'bqt' %}
+      <details><summary>Ghi lý do chấp nhận</summary><form method="post" action="/canh-bao/{{ a.id }}/chap-nhan">
+        <textarea name="reason" required></textarea>
+        <label class="check"><input type="checkbox" name="false_positive" value="1"> Cảnh báo sai</label><button class="small">Lưu</button></form></details>
+    {% endif %}
+  {% endif %}
+</div>
+{% else %}<p class="muted">Không có cảnh báo.</p>{% endfor %}
+{% endblock %}

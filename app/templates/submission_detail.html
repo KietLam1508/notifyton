@@ -1,0 +1,248 @@
+{% extends "base.html" %}
+{% block title %}{{ sub.code }}{% endblock %}
+{% block content %}
+{% set st = sub.status %}
+{% set is_bqt = user.role == 'bqt' %}
+{% set is_staff = user.role in ('bqt', 'thu_ky') %}
+<div class="actions" style="align-items:center">
+  <h1 style="margin:0">{{ sub.code }}{% if sub.version > 1 %} <small>phiên bản {{ sub.version }}</small>{% endif %}</h1>
+  <span class="badge {{ st }}">{{ STATUS[st] }}</span>
+  {% if sub.is_emergency %}<span class="badge cao">Đột xuất</span>{% endif %}
+</div>
+<p class="muted" style="margin:.3rem 0">{{ FUNDS[sub.fund_code] }} · {{ ctx.vendor.name }} · <b style="color:var(--text)">{{ sub.amount|money }}</b></p>
+
+{% set flow = ['nhap','da_nop','cho_bieu_quyet','da_duyet','san_sang_ky','da_ky','da_doi_soat','dong'] %}
+<div class="steps">
+  {% set idx = flow.index(st) if st in flow else -1 %}
+  {% for s in flow %}<span class="{{ 'now' if s == st else ('done' if idx > loop.index0) }}">{{ STATUS[s] }}</span>{% endfor %}
+</div>
+
+{% if sub.superseded_by %}<div class="flash error">Tờ trình này đã được thay bằng <a href="/to-trinh/{{ sub.superseded_by }}">phiên bản mới</a>.</div>{% endif %}
+{% if st == 'tu_choi' %}<div class="flash error"><b>BQT từ chối.</b> Lý do: {{ sub.rejection_reason }}
+  {% if user.role == 'bql' %}<p><a class="btn small" href="/to-trinh/moi?resubmit={{ sub.id }}">Nộp lại (liên kết tờ trình này)</a></p>{% endif %}</div>{% endif %}
+{% if linked %}<div class="hint">Nộp lại từ tờ trình bị từ chối <a href="/to-trinh/{{ linked.id }}">{{ linked.code }}</a>: <i>{{ linked.rejection_reason }}</i></div><br>{% endif %}
+
+<div class="grid c2">
+<div>
+  <!-- ===== Việc cần làm ===== -->
+  <div class="card">
+    <h2>Việc cần làm</h2>
+    {% if user.role == 'bql' %}
+      {% if st in ('nhap','yeu_cau_bo_sung') %}
+        <div class="actions">
+          <form method="post" action="/to-trinh/{{ sub.id }}/nop"><button>Nộp tờ trình</button></form>
+          <a class="btn secondary" href="/to-trinh/{{ sub.id }}/sua">Sửa thông tin</a>
+        </div>
+      {% elif st in ('da_nop','cho_bieu_quyet','can_hop','da_duyet','san_sang_ky') %}
+        <p class="muted">Đang chờ BQT xử lý.{% if st != 'da_nop' %} Số tiền đã khóa; muốn đổi phải tạo phiên bản mới và biểu quyết lại.{% endif %}</p>
+        {% if st != 'da_nop' %}
+        <details><summary>Tạo phiên bản mới</summary>
+          <form method="post" action="/to-trinh/{{ sub.id }}/phien-ban-moi"><label>Số tiền mới (để trống nếu giữ nguyên)</label>
+            <input type="number" name="amount"><p><button class="secondary small">Tạo phiên bản mới</button></p></form></details>
+        {% endif %}
+      {% elif st in ('da_ky','da_doi_soat','dong') %}<p class="muted">Đã ký UNC {{ sub.signed_at|vndate }}. Có thể báo nhà cung cấp.</p>
+      {% endif %}
+      {% if st in ('nhap','yeu_cau_bo_sung','da_nop') %}
+      <details><summary>Hủy tờ trình</summary><form method="post" action="/to-trinh/{{ sub.id }}/huy"><input type="text" name="reason" placeholder="Lý do hủy" required>
+        <p><button class="danger small">Hủy</button></p></form></details>
+      {% endif %}
+    {% endif %}
+
+    {% if is_staff %}
+      {% if st == 'da_nop' %}
+        {% if sub.is_emergency and not sub.emergency_confirmed_by and is_bqt %}
+        <div class="alert cao"><b>CP2 · R-25:</b> BQT cần xác nhận tính đột xuất trước khi mở biểu quyết.
+          <form method="post" action="/to-trinh/{{ sub.id }}/xac-nhan-dot-xuat">
+            <label>Xác nhận loại chi (R-01)</label><select name="cost_type">
+              {% for c in cost_types %}<option value="{{ c.code }}" {{ 'selected' if c.code == sub.cost_type }}>{{ c.name }}{% if c.is_operational %} (vận hành){% endif %}</option>{% endfor %}</select>
+            <label>Căn cứ xác nhận (sự cố, thời điểm, ảnh hiện trường…)</label><textarea name="note" required></textarea>
+            <p><button class="small">Xác nhận là bảo trì đột xuất</button></p></form></div>
+        {% elif sub.is_emergency and sub.emergency_confirmed_by %}<p class="ok-mark">✓ BQT đã xác nhận tính đột xuất: {{ sub.emergency_note }}</p>{% endif %}
+        <div class="actions">
+          <form method="post" action="/to-trinh/{{ sub.id }}/mo-bieu-quyet"><button>Kiểm tra CP2 & mở biểu quyết</button></form>
+        </div>
+        <details><summary>Yêu cầu BQL bổ sung</summary><form method="post" action="/to-trinh/{{ sub.id }}/yeu-cau-bo-sung">
+          <textarea name="reason" required placeholder="Nội dung cần bổ sung"></textarea><p><button class="secondary small">Gửi yêu cầu</button></p></form></details>
+      {% endif %}
+
+      {% if st in ('cho_bieu_quyet','can_hop') %}
+        <p>Cấp duyệt <b>{{ tally.tier.level }}</b>: {{ tally.tier.description }}<br>
+          Cần <b>{{ tally.needed }}</b> phiếu đồng ý / {{ tally.eligible|length }} người có quyền biểu quyết
+          {% if tally.chair_needed %}(bắt buộc có Trưởng ban){% endif %}.
+          Hiện: <b>{{ tally.yes|length }}</b> đồng ý, {{ tally.no|length }} không đồng ý, {{ tally.pending|length }} chưa cho ý kiến.
+          {% if st == 'cho_bieu_quyet' %}Hạn: <b>{{ sub.vote_deadline|vndate }}</b>.{% endif %}</p>
+        {% if tally.excluded %}<p class="muted">Không được biểu quyết (xung đột lợi ích): {{ tally.excluded|map(attribute='full_name')|join(', ') }}</p>{% endif %}
+        {% if is_bqt and user.id in tally.eligible|map(attribute='id')|list %}
+          <form method="post" action="/to-trinh/{{ sub.id }}/bieu-quyet" class="card" style="background:var(--brand-soft)">
+            <b>{{ 'Ý kiến của bạn (ghi nhận, kết quả chốt tại cuộc họp)' if st == 'can_hop' else 'Phiếu của bạn' }}</b>
+            {% if tally.votes.get(user.id) %}<small> – đã chọn: {{ 'Đồng ý' if tally.votes[user.id].choice == 'dong_y' else 'Không đồng ý' }} (sửa được trước hạn, phiếu cũ vẫn lưu)</small>{% endif %}
+            <input type="text" name="note" placeholder="Ghi chú (không hiển thị cho BQL)" style="margin-top:6px">
+            <div class="actions" style="margin-top:8px"><button name="choice" value="dong_y">👍 Đồng ý</button>
+              <button name="choice" value="khong_dong_y" class="danger">👎 Không đồng ý</button></div>
+          </form>
+        {% elif is_bqt %}<p class="miss-mark">Bạn không được biểu quyết tờ trình này (đã khai báo xung đột lợi ích).</p>{% endif %}
+        {% if is_bqt and st == 'cho_bieu_quyet' and tally.impossible %}
+          <div class="alert cao">Số phiếu không còn khả năng đạt tỷ lệ. BQT chốt một lý do chung gửi BQL:
+          <form method="post" action="/to-trinh/{{ sub.id }}/tu-choi"><textarea name="reason" required></textarea><button class="danger small">Chốt từ chối</button></form></div>
+        {% endif %}
+        {% if is_bqt and st == 'can_hop' %}
+          <div class="alert cao"><b>Cần họp trực tiếp.</b> Nhập kết quả họp kèm biên bản đã ký:
+          <form method="post" action="/to-trinh/{{ sub.id }}/ket-qua-hop" enctype="multipart/form-data">
+            <label>Kết quả</label><select name="decision"><option value="duyet">Thông qua</option><option value="tu_choi">Từ chối</option></select>
+            <label>Lý do chung (bắt buộc nếu từ chối – BQL sẽ thấy)</label><input type="text" name="reason">
+            <label>Biên bản họp đã ký</label><input type="file" name="file" required>
+            <p><button class="small">Lưu kết quả họp</button></p></form></div>
+        {% endif %}
+      {% endif %}
+
+      {% if st == 'da_duyet' %}
+        <p><b>Hồ sơ gửi ngân hàng</b> (mục 6.3) – tải về, in, ký tay, rồi upload bản đã ký:</p>
+        <div class="actions">
+          <a class="btn secondary small" href="/to-trinh/{{ sub.id }}/ho-so/de-nghi-chuyen-tien.docx">① Văn bản đề nghị chuyển tiền</a>
+          <a class="btn secondary small" href="/to-trinh/{{ sub.id }}/ho-so/bien-ban-hop.docx">② Biên bản họp BQT</a>
+          <a class="btn secondary small" href="/to-trinh/{{ sub.id }}/ho-so/trich-ke-hoach.docx">③ {{ 'Thông tin hợp đồng đột xuất' if sub.is_emergency else 'Trích kế hoạch bảo trì' }}</a>
+        </div>
+        <form method="post" action="/to-trinh/{{ sub.id }}/chung-tu" enctype="multipart/form-data" style="margin-top:10px">
+          <div class="row"><div><label>Loại bản ký</label><select name="doc_type"><option value="de_nghi_ky">{{ DOC_TYPES.de_nghi_ky }}</option>
+            <option value="bien_ban_hop_ky">{{ DOC_TYPES.bien_ban_hop_ky }}</option></select></div>
+            <div><label>File</label><input type="file" name="file" required></div></div>
+          <p><button class="secondary small">Upload bản ký</button></p></form>
+        {% if sub.signed_docs_verified_by %}<p class="ok-mark">✓ Bản ký đã được {{ names[sub.signed_docs_verified_by] }} kiểm tra khớp số tiền, nhà cung cấp</p>
+        {% else %}<form method="post" action="/to-trinh/{{ sub.id }}/xac-minh-ban-ky"><label class="check"><input type="checkbox" required> Tôi đã kiểm tra số tiền <b>{{ sub.amount|money }}</b> và tên <b>{{ ctx.vendor.name }}</b> trên bản ký khớp tờ trình</label>
+          <button class="secondary small">Xác nhận bản ký khớp</button></form>{% endif %}
+        <form method="post" action="/to-trinh/{{ sub.id }}/kiem-tra-cp3" style="margin-top:10px"><button>Kiểm tra CP3 → Sẵn sàng ký</button></form>
+      {% endif %}
+
+      {% if st == 'da_doi_soat' %}<form method="post" action="/to-trinh/{{ sub.id }}/dong"><button>Đóng hồ sơ</button></form>{% endif %}
+      {% if is_bqt and sub.is_emergency and st in ('da_duyet','san_sang_ky','da_ky','da_doi_soat','dong') and not sub.reported_to_assembly_at %}
+        <form method="post" action="/to-trinh/{{ sub.id }}/da-bao-cao-hoi-nghi" style="margin-top:8px"><button class="secondary small">Đánh dấu đã báo cáo Hội nghị</button></form>
+      {% endif %}
+      {% if is_bqt and st in ('cho_bieu_quyet','can_hop','da_duyet','san_sang_ky') %}
+        <details><summary>Hủy tờ trình</summary><form method="post" action="/to-trinh/{{ sub.id }}/huy"><input type="text" name="reason" placeholder="Lý do hủy" required>
+          <p><button class="danger small">Hủy</button></p></form></details>
+      {% endif %}
+    {% endif %}
+
+    {% if st == 'san_sang_ky' and user.role != 'bql' %}
+      {% if is_signer %}
+      <div class="alert nhac"><b>Sẵn sàng ký UNC.</b> Khi ký trên ngân hàng, ghi nội dung chuyển khoản: <code style="font-size:1.1em">{{ sub.code }}</code>
+        <br>Tài khoản nhận: <b>{{ sub.beneficiary_account }}</b> · Số tiền: <b>{{ sub.amount|money }}</b>
+        <form method="post" action="/to-trinh/{{ sub.id }}/xac-nhan-ky" enctype="multipart/form-data">
+          <div class="row"><div><label>Số tham chiếu ngân hàng *</label><input type="text" name="unc_ref" required></div>
+            <div><label>Số tiền trên UNC *</label><input type="number" name="unc_amount" required></div></div>
+          <label>File UNC *</label><input type="file" name="file" required>
+          <p><button>Xác nhận đã ký UNC</button></p></form></div>
+      {% else %}<p class="muted">Chờ chủ tài khoản ký UNC trên ngân hàng (chỉ chủ tài khoản đã đăng ký thấy nút xác nhận).</p>{% endif %}
+    {% endif %}
+  </div>
+
+  <!-- ===== Cảnh báo ===== -->
+  <div class="card">
+    <h2>Kết quả kiểm tra rule</h2>
+    {% for a in alerts %}{% set r = RULES[a.rule_id] %}
+      <div class="alert {{ 'accepted' if a.status == 'accepted' else a.severity }}">
+        <span class="badge {{ a.severity }}">{{ SEVERITY[a.severity] }}</span> <b>{{ a.rule_id }}</b> · {{ a.message }}
+        <div class="meta">{{ a.checkpoint }} · Nguồn {{ r.source_label }} · Căn cứ: {{ r.basis }} (hiệu lực {{ r.basis_date|vndate }})</div>
+        {% if a.severity == 'cao' and not is_bql %}
+          {% if a.status == 'accepted' %}<div class="meta">✓ Chấp nhận bởi {{ names[a.accepted_by] }}: "{{ a.accept_reason }}" · Chủ TK xác nhận: {{ names[a.confirmed_by] }}{% if a.false_positive %} · đánh giá: cảnh báo sai{% endif %}</div>
+          {% elif a.accept_reason %}<div class="meta">Lý do của {{ names[a.accepted_by] }}: "{{ a.accept_reason }}" – chờ chủ TK xác nhận</div>
+            {% if is_signer %}<form method="post" action="/canh-bao/{{ a.id }}/xac-nhan"><input type="hidden" name="next" value="/to-trinh/{{ sub.id }}"><button class="small">Chủ TK xác nhận</button></form>{% endif %}
+          {% elif is_bqt %}
+            <details><summary>Chấp nhận có lý do để tiếp tục</summary>
+              <form method="post" action="/canh-bao/{{ a.id }}/chap-nhan"><input type="hidden" name="next" value="/to-trinh/{{ sub.id }}">
+                <textarea name="reason" required placeholder="Lý do (lưu vĩnh viễn)"></textarea>
+                <label class="check"><input type="checkbox" name="false_positive" value="1"> Đây là cảnh báo sai (dùng để tinh chỉnh ngưỡng)</label>
+                <button class="small">Ghi lý do{% if is_signer %} & xác nhận{% endif %}</button></form></details>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% else %}<p class="muted">{{ 'Chưa chạy kiểm tra (tờ trình chưa nộp).' if st == 'nhap' else 'Không có cảnh báo.' }}</p>{% endfor %}
+  </div>
+</div>
+
+<div>
+  <div class="card">
+    <h2>Thông tin</h2>
+    <dl class="kv">
+      <dt>Lý do</dt><dd>{{ sub.reason }}</dd>
+      <dt>Hạng mục</dt><dd>{% if plan_item %}{{ plan_item.code }} · {{ plan_item.name }}{% elif sub.plan_item_code %}{{ sub.plan_item_code }}{% else %}—{% endif %}</dd>
+      <dt>Loại chi</dt><dd>{{ ctx.cost_type.name }}</dd>
+      <dt>Hợp đồng</dt><dd>{{ ctx.contract.contract_no }} · {{ ctx.contract.title }}<br><small>Giá trị {{ (ctx.contract.value + ctx.contract.addendum_value)|money }} · TK {{ ctx.contract.beneficiary_account }}</small></dd>
+      <dt>Thanh toán</dt><dd>{{ PAYMENT_METHOD[sub.payment_method] }}{% if sub.is_advance %} · tạm ứng{% endif %} · TK nhận {{ sub.beneficiary_account or '—' }}</dd>
+      {% if sub.is_mgmt_fee %}<dt>Tháng KPI</dt><dd>{{ sub.kpi_month }}</dd>{% endif %}
+      <dt>Tạo</dt><dd>{{ sub.created_at|vndate }}</dd>
+      {% if sub.unc_ref %}<dt>UNC</dt><dd>{{ sub.unc_ref }} · {{ sub.unc_amount|money }} · {{ names[sub.signed_by] }}</dd>{% endif %}
+      {% if versions|length > 1 %}<dt>Phiên bản</dt><dd>{% for v in versions %}<a href="/to-trinh/{{ v.id }}">v{{ v.version }}</a> ({{ STATUS[v.status] }}) {% endfor %}</dd>{% endif %}
+    </dl>
+  </div>
+
+  <div class="card">
+    <h2>Checklist hồ sơ (F-03)</h2>
+    <ul class="checklist">{% for c in checklist %}<li>{% if c.ok %}<span class="ok-mark">✓</span>{% else %}<span class="miss-mark">✗</span>{% endif %} {{ c.label }} <small class="muted">· {{ c.cp }}</small></li>{% endfor %}</ul>
+  </div>
+
+  <div class="card">
+    <h2>Chứng từ</h2>
+    <div class="table-wrap"><table>
+      {% for d in docs if (not is_bql or d.doc_type in BQL_DOC_TYPES) %}
+      <tr style="{{ 'opacity:.45;text-decoration:line-through' if d.cancelled or d.superseded_by }}">
+        <td><b>{{ DOC_TYPES[d.doc_type] }}</b><br><a href="/chung-tu/{{ d.id }}">{{ d.filename }}</a>
+          <br><small>{{ d.uploader }} · {{ d.uploaded_at|vndate }}{% if d.superseded_by %} · đã thay bằng bản mới{% endif %}{% if d.cancelled %} · đã hủy{% endif %}</small></td>
+        <td><small>{% if d.invoice_no %}HĐ số {{ d.invoice_no }} · MST {{ d.seller_tax_code }}<br>{% endif %}
+          {% if d.amount %}{{ d.amount|money }}<br>{% endif %}{% if d.doc_date %}ngày {{ d.doc_date|vndate }}<br>{% endif %}
+          {% if d.doc_type == 'nghiem_thu' %}{{ 'BQT ký' if d.signed_by_bqt }} {{ 'TVGS ký' if d.signed_by_supervisor }}{% if not d.signed_by_bqt and not d.signed_by_supervisor %}chỉ BQL/NCC ký{% endif %}{% endif %}
+          {% if d.doc_type == 'tra_cuu_mst' %}{{ 'Đang hoạt động' if d.tax_status == 'hoat_dong' else 'Ngừng hoạt động' }}{% endif %}
+          {% if d.doc_type == 'hop_dong' and d.contract_signed %}bản đã ký{% endif %}</small></td>
+      </tr>
+      {% else %}<tr><td class="muted">Chưa có chứng từ.</td></tr>{% endfor %}
+    </table></div>
+    {% if user.role == 'bql' and st in ('nhap','yeu_cau_bo_sung','da_nop') %}
+    <details open><summary>Upload chứng từ</summary>
+    <form method="post" action="/to-trinh/{{ sub.id }}/chung-tu" enctype="multipart/form-data" id="docform">
+      <label>Loại chứng từ</label><select name="doc_type" id="doctype">
+        {% for t in BQL_DOC_TYPES %}<option value="{{ t }}">{{ DOC_TYPES[t] }}</option>{% endfor %}</select>
+      <label>File (PDF/ảnh, chụp từ điện thoại được)</label><input type="file" name="file" accept=".pdf,image/*" required>
+      <div class="row" data-for="hoa_don">
+        <div><label>Số hóa đơn</label><input type="text" name="invoice_no"></div>
+        <div><label>MST người bán</label><input type="text" name="seller_tax_code" value="{{ ctx.vendor.tax_code }}"></div>
+        <div><label>Ngày hóa đơn</label><input type="date" name="doc_date"></div></div>
+      <div data-for="hoa_don bao_gia"><label>Số tiền trên chứng từ</label><input type="number" name="amount"></div>
+      <div data-for="nghiem_thu"><label class="check"><input type="checkbox" name="signed_by_bqt" value="1"> Có chữ ký xác nhận của BQT</label>
+        <label class="check"><input type="checkbox" name="signed_by_supervisor" value="1"> Có chữ ký tư vấn giám sát</label></div>
+      <div data-for="hop_dong"><label class="check"><input type="checkbox" name="contract_signed" value="1"> Bản hợp đồng đã ký</label></div>
+      <div data-for="tra_cuu_mst"><label>Kết quả tra cứu MST</label><select name="tax_status"><option value="hoat_dong">Đang hoạt động</option><option value="ngung_hoat_dong">Ngừng / tạm ngừng hoạt động</option></select></div>
+      <label>Thay cho chứng từ (nếu là bản mới)</label><select name="replace_id"><option value="">— Chứng từ mới —</option>
+        {% for d in docs if not d.superseded_by and not d.cancelled and d.doc_type in BQL_DOC_TYPES %}<option value="{{ d.id }}">{{ DOC_TYPES[d.doc_type] }} · {{ d.filename }}</option>{% endfor %}</select>
+      <p><button class="small">Upload</button></p>
+    </form></details>
+    <script>
+      const sel = document.getElementById('doctype');
+      function sh() { document.querySelectorAll('#docform [data-for]').forEach(e => e.style.display = e.dataset.for.split(' ').includes(sel.value) ? '' : 'none'); }
+      sel.addEventListener('change', sh); sh();
+    </script>
+    {% endif %}
+  </div>
+
+  {% if not is_bql and vote_history %}
+  <div class="card">
+    <h2>Lịch sử phiếu <small>(BQL không xem được)</small></h2>
+    <table>{% for v in vote_history %}
+      <tr style="{{ 'opacity:.5' if v.superseded }}"><td>{{ names[v.user_id] }}</td><td>{{ 'Đồng ý' if v.choice == 'dong_y' else 'Không đồng ý' }}{% if v.superseded %} <small>(đã sửa)</small>{% endif %}</td>
+        <td><small>{{ v.cast_at|vndate }}</small>{% if v.note %}<br><small>{{ v.note }}</small>{% endif %}</td></tr>{% endfor %}</table>
+  </div>
+  {% endif %}
+
+  {% if txns and not is_bql %}
+  <div class="card"><h2>Giao dịch sao kê đã khớp</h2>
+    {% for t in txns %}<div>{{ t.txn_date|vndate }} · {{ t.bank_ref }} · {{ (-t.amount)|money }} · {{ MATCH_STATUS[t.match_status] }}</div>{% endfor %}</div>
+  {% endif %}
+
+  <div class="card">
+    <h2>Lịch sử trạng thái</h2>
+    <table>{% for h in history %}
+      <tr><td><small>{{ h.at|vndate }}</small></td><td>{{ STATUS[h.to_status] }}{% if h.note and not (is_bql and h.to_status in ('can_hop',)) %}<br><small class="muted">{{ h.note }}</small>{% endif %}</td>
+        <td><small>{{ names.get(h.by_user, 'Hệ thống') }}</small></td></tr>{% endfor %}</table>
+  </div>
+</div>
+</div>
+{% endblock %}

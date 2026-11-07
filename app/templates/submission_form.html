@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Tạo tờ trình' if mode == 'new' else 'Sửa tờ trình' }}{% endblock %}
+{% block content %}
+<h1>{{ 'Tạo tờ trình' if mode == 'new' else 'Sửa tờ trình ' ~ sub.code }}</h1>
+{% if sub.linked_code %}
+<div class="hint">Nộp lại tờ trình <b>{{ sub.linked_code }}</b> đã bị từ chối. Lý do BQT: <i>{{ sub.rejection_reason }}</i></div><br>
+{% endif %}
+<form class="card" method="post" action="{{ '/to-trinh/moi' if mode == 'new' else '/to-trinh/' ~ sub.id ~ '/sua' }}">
+  {% if sub.linked_submission_id %}<input type="hidden" name="linked_submission_id" value="{{ sub.linked_submission_id }}">{% endif %}
+  <div class="row">
+    <div><label>Quỹ *</label><select name="fund_code" id="fund" required>
+      {% for k, v in FUNDS.items() %}<option value="{{ k }}" {{ 'selected' if sub.fund_code == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Hạng mục kế hoạch / dự toán</label><select name="plan_item_code" id="item">
+      <option value="">— Không thuộc kế hoạch —</option>
+      {% for i in items %}<option value="{{ i.code }}" data-fund="{{ i.fund_code }}" {{ 'selected' if sub.plan_item_code == i.code }}>{{ i.code }} · {{ i.name }}</option>{% endfor %}</select></div>
+  </div>
+  <label class="check"><input type="checkbox" name="is_emergency" value="1" {{ 'checked' if sub.is_emergency }}> Bảo trì <b>đột xuất</b> (sự cố cần xử lý ngay; BQT sẽ phải xác nhận)</label>
+  <div class="row">
+    <div><label>Loại chi phí *</label><select name="cost_type" required>
+      {% for c in cost_types %}<option value="{{ c.code }}" {{ 'selected' if sub.cost_type == c.code }}>{{ c.name }}{% if c.is_operational %} (vận hành){% endif %}</option>{% endfor %}</select></div>
+    <div><label>Nhà cung cấp *</label><select name="vendor_id" id="vendor" required>
+      {% for v in vendors %}<option value="{{ v.id }}" {{ 'selected' if sub.vendor_id == v.id }}>{{ v.name }} · MST {{ v.tax_code }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="row">
+    <div><label>Hợp đồng *</label><select name="contract_id" id="contract" required>
+      {% for c in contracts %}<option value="{{ c.id }}" data-vendor="{{ c.vendor_id }}" data-account="{{ c.beneficiary_account }}" {{ 'selected' if sub.contract_id == c.id }}>{{ c.contract_no }} · {{ c.title }}</option>{% endfor %}</select></div>
+    <div><label>Đợt thanh toán</label><select name="installment_id" id="inst"><option value="">— Không chia đợt —</option>
+      {% for i in installments %}<option value="{{ i.id }}" data-contract="{{ i.contract_id }}" {{ 'selected' if sub.installment_id == i.id }}>{{ i.name }} · {{ i.amount|money }}</option>{% endfor %}</select></div>
+  </div>
+  <div class="row">
+    <div><label>Số tiền (đồng) *</label><input type="number" name="amount" min="1" required value="{{ sub.amount or '' }}"></div>
+    <div><label>Hình thức thanh toán *</label><select name="payment_method">
+      {% for k, v in PAYMENT_METHOD.items() %}<option value="{{ k }}" {{ 'selected' if sub.payment_method == k }}>{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Tài khoản nhận tiền</label><input type="text" name="beneficiary_account" id="acc" value="{{ sub.beneficiary_account or '' }}"></div>
+  </div>
+  <label class="check"><input type="checkbox" name="is_advance" value="1" {{ 'checked' if sub.is_advance }}> Đây là khoản <b>tạm ứng</b> theo hợp đồng</label>
+  <details {{ 'open' if sub.is_mgmt_fee or sub.service_key }}><summary>Thông tin thêm (phí QLVH, đơn giá)</summary>
+    <label class="check"><input type="checkbox" name="is_mgmt_fee" value="1" {{ 'checked' if sub.is_mgmt_fee }}> Đề nghị thanh toán <b>phí quản lý vận hành</b></label>
+    <div class="row">
+      <div><label>Tháng KPI (phí QLVH)</label><input type="month" name="kpi_month" value="{{ sub.kpi_month or '' }}"></div>
+      <div><label>Mã dịch vụ (so đơn giá lịch sử)</label><input type="text" name="service_key" value="{{ sub.service_key or '' }}"></div>
+      <div><label>Đơn giá</label><input type="number" name="unit_price" value="{{ sub.unit_price or '' }}"></div>
+    </div>
+  </details>
+  <label>Lý do / nội dung chi *</label><textarea name="reason" required>{{ sub.reason or '' }}</textarea>
+  <p><button type="submit">{{ 'Tạo tờ trình (Nháp)' if mode == 'new' else 'Lưu' }}</button></p>
+  <small class="muted">Sau khi tạo, upload chứng từ rồi bấm <b>Nộp</b>. Hệ thống kiểm tra hồ sơ (CP1) ngay khi nộp.</small>
+</form>
+<script>
+// Lọc hạng mục theo quỹ, hợp đồng theo nhà cung cấp, đợt theo hợp đồng; gợi ý tài khoản theo hợp đồng
+const $ = id => document.getElementById(id);
+function filt(sel, attr, val) { [...sel.options].forEach(o => { if (o.dataset[attr]) o.hidden = o.dataset[attr] !== val; });
+  if (sel.selectedOptions[0] && sel.selectedOptions[0].hidden) sel.value = [...sel.options].find(o => !o.hidden)?.value || ''; }
+function sync() { filt($('item'), 'fund', $('fund').value); filt($('contract'), 'vendor', $('vendor').value);
+  filt($('inst'), 'contract', $('contract').value);
+  if (!$('acc').value && $('contract').selectedOptions[0]) $('acc').placeholder = 'TK trong hợp đồng: ' + $('contract').selectedOptions[0].dataset.account; }
+['fund','vendor','contract'].forEach(i => $(i).addEventListener('change', sync)); sync();
+</script>
+{% endblock %}

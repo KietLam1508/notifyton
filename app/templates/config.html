@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Cấu hình{% endblock %}
+{% block content %}
+<h1>Cấu hình & danh mục rule</h1>
+<p class="hint">Mọi thay đổi ngưỡng, cấp duyệt, bật/tắt rule [T] phải được <b>một thành viên BQT khác</b> duyệt. Người đề xuất không tự duyệt; chủ tài khoản không được đề xuất. Rule [L] không có nút tắt.</p>
+
+<div class="card">
+  <h2>Đề xuất chờ duyệt / đã xử lý</h2>
+  {% for c in changes %}
+  <div class="alert {{ 'nhac' if c.status == 'pending' else ('accepted' if c.status == 'approved' else 'chan') }}">
+    <b>{{ kinds[c.kind] }}</b> · {{ c.description }} · <code>{{ c.payload }}</code>
+    <div class="meta">Đề xuất bởi {{ names[c.proposed_by] }} · {{ c.proposed_at|vndate }} · {{ {'pending':'Chờ duyệt','approved':'Đã áp dụng','rejected':'Bị từ chối'}[c.status] }}
+      {% for a in c.approvals %} · {{ names[a.user_id] }}: {{ 'duyệt' if a.decision == 'approve' else 'từ chối' }}{% endfor %}
+      {% if c.need %} · cần toàn bộ chủ TK: {% for u in c.need %}{{ names[u] }}{{ ', ' if not loop.last }}{% endfor %}{% endif %}</div>
+    {% if c.status == 'pending' and user.role == 'bqt' and user.id != c.proposed_by %}
+    <form method="post" action="/cau-hinh/{{ c.id }}/quyet-dinh" class="actions" style="margin-top:6px">
+      <input type="text" name="note" placeholder="Ghi chú" style="width:200px">
+      <button name="decision" value="approve" class="small">Duyệt</button><button name="decision" value="reject" class="small danger">Từ chối</button></form>
+    {% endif %}
+  </div>
+  {% else %}<p class="muted">Chưa có đề xuất.</p>{% endfor %}
+</div>
+
+{% set can_propose = user.role in ('admin','bqt') and not user.is_account_holder %}
+<div class="card table-wrap">
+  <h2>Ngưỡng (giá trị mẫu – chờ Quy chế thu chi Q1)</h2>
+  <table><tr><th>Khóa</th><th>Mô tả</th><th>Giá trị</th></tr>
+  {% for s in settings_rows %}<tr><td><code>{{ s.key }}</code></td><td>{{ s.desc }}</td><td><b>{{ s.value }}</b></td></tr>{% endfor %}</table>
+  {% if can_propose %}<details><summary>Đề xuất đổi ngưỡng</summary><form method="post" action="/cau-hinh/de-xuat" class="row">
+    <input type="hidden" name="kind" value="setting">
+    <div><label>Ngưỡng</label><select name="key">{% for s in settings_rows %}<option value="{{ s.key }}">{{ s.key }}</option>{% endfor %}</select></div>
+    <div><label>Giá trị mới</label><input type="text" name="value" required></div>
+    <div><label>Lý do</label><input type="text" name="description" required></div>
+    <div><label>&nbsp;</label><button>Gửi đề xuất</button></div></form></details>{% endif %}
+</div>
+
+<div class="card table-wrap">
+  <h2>Cấp duyệt (mục 6.1)</h2>
+  <table><tr><th>Cấp</th><th class="num">Từ</th><th>Tỷ lệ</th><th>Họp trực tiếp</th><th>Mô tả</th></tr>
+  {% for t in tiers %}<tr><td>{{ t.level }}</td><td class="num">{{ t.min_amount|money }}</td><td>{{ TIER_RULE[t.rule_type] }}{% if t.rule_type == 'count' %} {{ t.required_count }}{% endif %}{% if t.require_chair %} + Trưởng ban{% endif %}</td>
+    <td>{{ '✓' if t.in_person }}</td><td>{{ t.description }}</td></tr>{% endfor %}</table>
+  {% if can_propose %}<details><summary>Đề xuất sửa cấp duyệt</summary><form method="post" action="/cau-hinh/de-xuat" class="row">
+    <input type="hidden" name="kind" value="tier">
+    <div><label>Cấp</label><input type="number" name="level" required></div><div><label>Từ số tiền</label><input type="number" name="min_amount" required></div>
+    <div><label>Tỷ lệ</label><select name="rule_type">{% for k, v in TIER_RULE.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div><label>Số phiếu (nếu "số phiếu tối thiểu")</label><input type="number" name="required_count"></div>
+    <div><label class="check"><input type="checkbox" name="require_chair" value="1"> Bắt buộc Trưởng ban</label><label class="check"><input type="checkbox" name="in_person" value="1"> Họp trực tiếp</label></div>
+    <div><label>Mô tả</label><input type="text" name="description" required></div><div><label>&nbsp;</label><button>Gửi đề xuất</button></div></form></details>{% endif %}
+</div>
+
+<div class="card table-wrap">
+  <h2>Danh mục rule (mục 8)</h2>
+  <table><tr><th>ID</th><th>Rule</th><th>Mức</th><th>Nguồn</th><th>CP</th><th>Căn cứ</th><th>Trạng thái</th></tr>
+  {% for row in rule_rows %}{% set r = row.rule %}
+  <tr><td><b>{{ r.id }}</b></td><td>{{ r.title }}</td><td><span class="badge {{ r.severity }}">{{ SEVERITY[r.severity] }}</span></td>
+    <td><span class="badge src">{{ r.source_label }}</span></td><td>{{ r.checkpoints|join(', ') }}</td>
+    <td><small>{{ r.basis }} · hiệu lực {{ r.basis_date|vndate }}</small></td>
+    <td>{% if row.enabled %}<span class="badge ok">Bật</span>{% else %}<span class="badge chan">Tắt</span>{% endif %}
+      {% if r.toggleable and can_propose %}<form method="post" action="/cau-hinh/de-xuat"><input type="hidden" name="kind" value="rule_toggle">
+        <input type="hidden" name="rule_id" value="{{ r.id }}"><input type="hidden" name="enabled" value="{{ '0' if row.enabled else '1' }}">
+        <input type="hidden" name="description" value="{{ 'Tắt' if row.enabled else 'Bật' }} {{ r.id }}">
+        <button class="small secondary">Đề xuất {{ 'tắt' if row.enabled else 'bật' }}</button></form>
+      {% elif not r.toggleable %}<br><small class="muted">không tắt được</small>{% endif %}</td></tr>
+  {% endfor %}</table>
+  <p class="muted">[L] Luật định · [Q] Quy chế Skyline · [T] Thực hành tốt · * suy ra từ nghĩa vụ luật định, cần pháp lý xác nhận. Căn cứ pháp lý là bản nháp – chờ rà soát trước go-live.</p>
+</div>
+
+<div class="card">
+  <h2>Tài khoản quỹ & tài khoản thụ hưởng (R-24)</h2>
+  {% for f in funds %}<div>{{ f.name }}: <b>{{ f.account_no }}</b> {% if f.account_locked %}🔒 đã khóa{% endif %}</div>{% endfor %}
+  {% if user.role in ('admin','thu_ky','bqt') %}
+  <details><summary>Sửa trực tiếp số tài khoản quỹ</summary>
+    <form method="post" action="/cau-hinh/sua-tai-khoan-quy" class="row">
+      <div><label>Quỹ</label><select name="fund_code">{% for f in funds %}<option value="{{ f.code }}">{{ f.name }}</option>{% endfor %}</select></div>
+      <div><label>Số TK mới</label><input type="text" name="account_no" required></div><div><label>&nbsp;</label><button class="danger">Lưu</button></div></form></details>
+  {% endif %}
+  {% if can_propose %}
+  <details><summary>Đề xuất ngoại lệ đổi tài khoản quỹ (sáp nhập ngân hàng…)</summary>
+    <form method="post" action="/cau-hinh/de-xuat" enctype="multipart/form-data" class="row"><input type="hidden" name="kind" value="fund_account">
+      <div><label>Quỹ</label><select name="fund_code">{% for f in funds %}<option value="{{ f.code }}">{{ f.name }}</option>{% endfor %}</select></div>
+      <div><label>Số TK mới</label><input type="text" name="account_no" required></div><div><label>Lý do</label><input type="text" name="description" required></div>
+      <div><label>Văn bản căn cứ *</label><input type="file" name="file"></div><div><label>&nbsp;</label><button>Gửi đề xuất</button></div></form></details>
+  <details><summary>Đề xuất đổi tài khoản thụ hưởng hợp đồng</summary>
+    <form method="post" action="/cau-hinh/de-xuat" class="row"><input type="hidden" name="kind" value="contract_account">
+      <div><label>Hợp đồng</label><select name="contract_id">{% for c in contracts %}<option value="{{ c.id }}">{{ c.contract_no }} ({{ c.beneficiary_account }})</option>{% endfor %}</select></div>
+      <div><label>TK mới</label><input type="text" name="beneficiary_account" required></div><div><label>Lý do / căn cứ</label><input type="text" name="description" required></div>
+      <div><label>&nbsp;</label><button>Gửi đề xuất</button></div></form></details>
+  {% endif %}
+</div>
+{% endblock %}

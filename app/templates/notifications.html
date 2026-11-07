@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Thông báo{% endblock %}
+{% block content %}
+<div class="actions" style="justify-content:space-between;align-items:center"><h1>Thông báo</h1>
+  <form method="post" action="/thong-bao/doc-het"><button class="small secondary">Đánh dấu đã đọc hết</button></form></div>
+{% for n in rows %}
+<div class="card" style="{{ 'border-left:4px solid var(--brand)' if not n.read_at }}">
+  <b>{% if n.link %}<a href="{{ n.link }}">{{ n.title }}</a>{% else %}{{ n.title }}{% endif %}</b>
+  {% if n.body %}<div>{{ n.body }}</div>{% endif %}<small class="muted">{{ n.created_at|vndate }}</small>
+</div>
+{% else %}<p class="muted">Không có thông báo.</p>{% endfor %}
+{% endblock %}
