@@ -3,16 +3,16 @@
 | | |
 |---|---|
 | **Partner** | Boxme |
-| **Country** | [TBD] (doc mentions Philippines, Thailand, Vietnam warehouse network) |
+| **Country** | [TBD] (Boxme operates in Philippines, Thailand, Vietnam) |
 | **Overall status** | Active |
-| **Current stage** | S1 Intake |
-| **Next action** | Get full API page content (only the doc index has been read) |
+| **Current stage** | S2 Evaluate (waiting on gate G1) |
+| **Next action** | WMS partner PIC confirms 13 "varies" scores and scores rows 1, 2, 32, 33, 34, then decides G1 |
 | **Owner** | [TBD] |
-| **Partner contact** | [TBD] |
+| **Partner contact** | [TBD] (doc lists tech@boxme.asia, support@boxme.asia) |
 | **Brands / ventures requesting** | [TBD] |
 | **Target go-live** | [TBD] |
 | **Jira epic** | [TBD] |
-| **API doc version** | Boxme Open API, developers.boxme.asia (latest changelog entry 11-06-2026) |
+| **API doc version** | Boxme Open API v2, developers.boxme.asia (103 pages; latest changelog 11-06-2026) |
 | **Last updated** | 2026-11-13 |
 
 > Started as a **new partner run** on 2026-11-13. The earlier Boxme V2 mapping (Confluence
@@ -24,8 +24,8 @@
 
 | Stage | Status | Gate | Gate decision | Decided by | Date | Main output |
 |---|---|---|---|---|---|---|
-| S1 Intake | In progress | — | — | — | | Endpoint inventory (index only) |
-| S2 Evaluate | Not started | G1 Go / no-go | | | | Evaluation scorecard |
+| S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
+| S2 Evaluate | Waiting on gate | G1 Go / no-go | | | | Evaluation scorecard: 72, Proceed with caveats (draft) |
 | S3 Validate | Not started | G2 Logic understood | | | | System logic notes |
 | S4 Use-case fit | Not started | G3 Scope agreed | | | | Use-case fit page |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
@@ -48,10 +48,27 @@
 
 | ID | Question | Category | Blocking? | Asked on | Answer | Answered on | Affects |
 |---|---|---|---|---|---|---|---|
-| Q-01 | Is there an API to list Boxme warehouses available to a seller? None appears in the doc index | API behaviour | N | | | | S2 #5, UC-01 |
-| Q-02 | "Get Order" is limited to 60 requests per **minute**. What are the limits for other endpoints, and are they per seller or per partner? | Rate limit | Y | | | | S2 #4, L-38 |
-| Q-03 | Is "Update Document" the way to send the marketplace AWB / shipping label? | API behaviour | N | | | | S2 #17, UC-12 |
-| Q-04 | How are webhook URLs registered: by API, in the seller portal, or by Boxme support? | Webhook | N | | | | S2 #27, UC-18 |
+| Q-01 | Is there an API to list Boxme warehouses? | API behaviour | N | — | **Answered by doc:** Get Pickup List returns warehouses (`pickup_id`, `warehouse_code`) | 2026-11-13 | S2 #5, UC-01 |
+| Q-02 | Rate limits are per IP (Create Order 2 rps, Create Product 1 rps, Get Order 60/min). PowerSell sends for many sellers from the same servers. Are limits per IP or per API key, and can they be raised for PowerSell? What happens on 11.11 when limits are hit (`traffic_limit` 503)? | Rate limit | Y | | | | S2 #4, L-38, UC-09 |
+| Q-03 | How do we send the marketplace AWB / label? | API behaviour | N | — | **Answered by doc:** Order Pack (`shipping_label` URL + `courier_tracking_code`); Update Document (`type: label`) | 2026-11-13 | S2 #17, UC-12 |
+| Q-04 | How are webhook URLs registered? | Webhook | N | — | **Partly answered by doc:** in the web portal (oms.boxme.asia), per seller account. See Q-12 | 2026-11-13 | S2 #27, UC-18 |
+| Q-05 | Is there a staging environment? Please share the base URL, a test seller account and API key. The doc lists only production (`https://s.boxme.asia`) | Environment | Y | | | | S2 #1–2, S3 smoke tests |
+| Q-07 | Until which status can we cancel: an order (Cancel Order), an ASN (Cancel ASN), a return (Cancel Returns Order)? | API behaviour | Y | | | | S2 #12, #16, #25, UC-07, UC-11, UC-17 |
+| Q-08 | Shelf-life unit: Create Product says `expiry_threshold` and `min_inbound_shelf_life` are in **days**, Update Product and Get Products say **months**. Which is correct? | Data model | Y | | | | L-12, UC-02 |
+| Q-09 | The ASN and return webhooks carry status only. Can received quantities per SKU and condition be added, so we don't have to call the receiving note / returns-receive API? | Webhook | N | | | | S2 #28, #31, UC-08, UC-16 |
+| Q-10 | Doc fixes: Create Returns Order has a mandatory field named `01HTPRXX7CJ3BFGXWQTG275SBB`; Direct RTS has `01HYD3H7Z5KMAEP89ME3QJRPJ6`; COD statement paths show `/`; zipcode path shows `/pi/v2/…`; Cancel Returns Order has no documented response. What are the correct values? | API behaviour | N | | | | S2 #3 |
+| Q-11 | After Create Product, does Boxme ops need to approve the product before it can be used in an ASN or order? How long does it take, and does Product Update Push tell us when it's approved? | API behaviour | N | | | | UC-02, UC-05 |
+| Q-12 | Webhooks are set up per seller account in the web portal. Can PowerSell register one webhook for all its sellers (partner app), or by API? | Webhook | N | | | | S2 #27, UC-18 |
+| Q-13 | Due diligence 1: How do you handle traffic spikes, especially during peak sessions and mega campaign days (e.g. 6.6, 11.11, 12.12)? | Due diligence | N | | | | |
+| Q-14 | Due diligence 2: What is the average uptime percentage over the past 12 months? | Due diligence | N | | | | |
+| Q-15 | Due diligence 3: Could you share performance benchmarks on latency, response time, and API concurrency limits? | Due diligence | N | | | | |
+| Q-16 | Due diligence 4: Please highlight response time, concurrent load handling, and system scalability. | Due diligence | N | | | | |
+| Q-17 | Due diligence 5: What incident response procedures are in place in case of a data breach? | Due diligence | N | | | | |
+| Q-18 | Due diligence 6: Please share details about the scalability, error handling, and response efficiency of each API. | Due diligence | N | | | | |
+| Q-19 | Due diligence 7: What backup and disaster recovery plans are in place? | Due diligence | N | | Partly in doc: RTO 8 h, RPO 1 min–24 h | | |
+| Q-20 | Due diligence 8: How do you handle API downtime, failures, or outages, and what is the incident response time? | Due diligence | N | | | | |
+
+(Q-06 merged into Q-02.)
 
 ---
 
@@ -59,8 +76,12 @@
 
 | ID | Risk / gap | Use case | Workaround | Owner | Status |
 |---|---|---|---|---|---|
-| R-01 | Get Order rate limit 60 req/min, far below the 60 calls/sec checklist bar | UC-13 | Rely on Order Status Push webhook instead of polling | [TBD] | Open (from doc index only) |
-| R-02 | Get Stock Available accepts max 20 SKUs per call | UC-04 | Batch calls; rely on Inventory Change Push webhook | [TBD] | Open (from doc index only) |
+| R-01 | Rate limits per IP (Create Order 2 rps ≈ 7,200 orders/hour across **all** PowerSell sellers on Boxme; Get Order 60/min) | UC-09, UC-13 | Queue order creation; use Order Status Push instead of polling; ask for higher limits (Q-02) | [TBD] | Open |
+| R-02 | Get Stock Available: max 20 SKUs per call, 1 rps (≈ 2 min for a 2,000-SKU full check) | UC-04 | Use Available Stock Change Push day to day; full check only for reconciliation | [TBD] | Open |
+| R-03 | No staging environment documented | All | Q-05; without staging, S3 tests would run in production | [TBD] | Open |
+| R-04 | Since 25/07/2026: IP whitelist (re-confirm every 180 days) and API keys expire after max 365 days. If missed, all calls fail (403 / 401) | All | Calendar reminders; alert on 401 / 403; one owner per seller account | [TBD] | Open |
+| R-05 | ASN and return webhooks carry no quantities | UC-08, UC-16 | Fetch receiving note (GRN) / returns-receive when status is Completed / Returned (Q-09) | [TBD] | Open |
+| R-06 | Create Product needs 27 mandatory fields, some of which PowerSell may not hold (Boxme category ID, packing material, wholesale price, GS1 flag) | UC-02 | Default rules per field (S3 check L-15) | [TBD] | Open |
 
 ---
 
@@ -68,8 +89,9 @@
 
 | Artifact | Link | Version / date | Status |
 |---|---|---|---|
-| Partner API document | https://developers.boxme.asia/doc-393601 | Latest changelog 11-06-2026 | Current (index read; page content not yet read) |
-| Endpoint inventory | Below | 2026-11-13 | Draft: names only |
+| Partner API document | https://developers.boxme.asia/doc-393601 (full export uploaded by user) | Latest changelog 11-06-2026 | Current |
+| Endpoint inventory | Below | 2026-11-13 | Current |
+| Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, draft | Current: waiting on "varies" confirmation |
 
 ---
 
@@ -77,76 +99,79 @@
 
 | Date | What happened |
 |---|---|
-| 2026-11-13 | New partner run started. Doc host blocked from the copilot's environment; user uploaded llms.txt index. Draft endpoint inventory built from page titles only. Waiting on full page content |
+| 2026-11-13 | New partner run started. Doc host blocked from the copilot's environment; user uploaded llms.txt index, then a full export of all 103 pages |
+| 2026-11-13 | S1 done: 61 endpoints inventoried (44 good, 9 partial, 8 missing samples) |
+| 2026-11-13 | S2 draft scorecard: 72 / Proceed with caveats. Waiting on PIC to confirm 13 "varies" rows and score rows 1, 2, 32, 33, 34 before G1 |
 
 ---
 
-# Appendix – Endpoint inventory – Boxme Open API (draft from doc index)
+# Appendix – Endpoint inventory – Boxme Open API v2
 
-Method, path and doc quality are filled in once the pages are read.
+Base URL (production only, as documented): `https://s.boxme.asia`. Auth header:
+`Authorization: Token <API key>` (key created per seller account in oms.boxme.asia).
+Error cases are documented centrally (Common Errors, Order Error Codes). Only Create
+Product and Create ASN show an error example on the endpoint itself.
 
 | # | Flow group | Endpoint name | Method | Path | Direction | Doc quality | Note |
 |---|---|---|---|---|---|---|---|
-| 1 | Config | Province | ? | ? | PowerSell → Partner | Not read | Location codes by country |
-| 2 | Config | District | ? | ? | PowerSell → Partner | Not read | |
-| 3 | Config | Sub-district | ? | ? | PowerSell → Partner | Not read | |
-| 4 | Config | Lookup zipcode | ? | ? | PowerSell → Partner | Not read | VN new location database (changelog 25/10/2025) |
-| 5 | Config | Get Pickup List | ? | ? | PowerSell → Partner | Not read | Seller pickup addresses, not warehouses |
-| 6 | Config | Create Pickup Address | ? | ? | PowerSell → Partner | Not read | |
-| 7 | Config | Active / Deactive Pickup | ? | ? | PowerSell → Partner | Not read | |
-| 8 | Product | Create Product | ? | ? | PowerSell → Partner | Not read | |
-| 9 | Product | Get Category Tree | ? | ? | PowerSell → Partner | Not read | |
-| 10 | Product | Get Products | ? | ? | PowerSell → Partner | Not read | |
-| 11 | Product | Get Product Units | ? | ? | PowerSell → Partner | Not read | |
-| 12 | Product | Deactive Product | ? | ? | PowerSell → Partner | Not read | |
-| 13 | Product | Update Product | ? | ? | PowerSell → Partner | Not read | |
-| 14 | Product | Get Stock Available | ? | ? | PowerSell → Partner | Not read | Max 20 SKUs per call |
-| 15 | Product | Reserved Stock | ? | ? | PowerSell → Partner | Not read | Max 20 SKUs, per warehouse |
-| 16 | Product | Get Stock Report | ? | ? | PowerSell → Partner | Not read | Expiry date, batch / lot |
-| 17 | Product | Get Stock Report (V3) | ? | ? | PowerSell → Partner | Not read | |
-| 18 | Inbound | Create Inbound Shipment (ASN) | ? | ? | PowerSell → Partner | Not read | |
-| 19 | Inbound | Cancel ASN | ? | ? | PowerSell → Partner | Not read | |
-| 20 | Inbound | Get Shipment Detail | ? | ? | PowerSell → Partner | Not read | Inbound qty by SKU, proof of delivery |
-| 21 | Inbound | Get Receiving Note (GRN) | ? | ? | PowerSell → Partner | Not read | |
-| 22 | Inbound | Get Inbound Serial List | ? | ? | PowerSell → Partner | Not read | |
-| 23 | Inbound | Create ASN Booking | ? | ? | PowerSell → Partner | Not read | Timeslot booking |
-| 24 | Inbound | Get ASN Available Timeslot | ? | ? | PowerSell → Partner | Not read | |
-| 25 | Inbound | Cancel ASN Booking | ? | ? | PowerSell → Partner | Not read | |
-| 26 | Inbound | Get Shipment List | ? | ? | PowerSell → Partner | Not read | |
-| 27 | Outbound | Get Shipping Option (Fulfillment) | ? | ? | PowerSell → Partner | Not read | |
-| 28 | Outbound | Get Shipping Option (Dropship) | ? | ? | PowerSell → Partner | Not read | Non-fulfillment |
-| 29 | Outbound | Create B2C Order | ? | ? | PowerSell → Partner | Not read | |
-| 30 | Outbound | Create Delivery Order | ? | ? | PowerSell → Partner | Not read | Non-fulfillment |
-| 31 | Outbound | Create B2B Order | ? | ? | PowerSell → Partner | Not read | |
-| 32 | Outbound | Update Document | ? | ? | PowerSell → Partner | Not read | AWB upload? (Q-03) |
-| 33 | Outbound | Request Cancel Delivery Order | ? | ? | PowerSell → Partner | Not read | After shipped; limited sellers |
-| 34 | Outbound | Cancel Order | ? | ? | PowerSell → Partner | Not read | |
-| 35 | Outbound | Get Order | ? | ? | PowerSell → Partner | Not read | 60 req/min |
-| 36 | Outbound | Get Order List | ? | ? | PowerSell → Partner | Not read | By time or status |
-| 37 | Outbound | Get Courier List | ? | ? | PowerSell → Partner | Not read | |
-| 38 | Outbound | Get Courier Service | ? | ? | PowerSell → Partner | Not read | |
-| 39 | Outbound | Get Packed Items | ? | ? | PowerSell → Partner | Not read | Packed qty, expiry, batch; from RTS |
-| 40 | Outbound | Order Pack | ? | ? | PowerSell → Partner | Not read | Confirm ready to pack |
-| 41 | Outbound | Get B2B Pickup TimeSlot | ? | ? | PowerSell → Partner | Not read | |
-| 42 | Outbound | Get Tracking | ? | ? | PowerSell → Partner | Not read | |
-| 43 | Return | Create Returns Order | ? | ? | PowerSell → Partner | Not read | |
-| 44 | Return | Get Returns Order | ? | ? | PowerSell → Partner | Not read | Qty accepted, proof of delivery |
-| 45 | Return | Get Order Returns Receive | ? | ? | PowerSell → Partner | Not read | |
-| 46 | Return | Cancel Returns Order | ? | ? | PowerSell → Partner | Not read | |
-| 47 | Other | Create B2B Customer | ? | ? | PowerSell → Partner | Not read | |
-| 48 | Other | Get Customer | ? | ? | PowerSell → Partner | Not read | |
-| 49 | Other | Update Customer | ? | ? | PowerSell → Partner | Not read | |
-| 50 | Other | Get COD Statements List | ? | ? | PowerSell → Partner | Not read | Finance |
-| 51 | Other | Get COD Statement Transactions | ? | ? | PowerSell → Partner | Not read | Finance |
-| 52 | Other | Get Order Fee | ? | ? | PowerSell → Partner | Not read | Finance |
-| 53 | Webhook | Shipment (ASN) Status Push | — | — | Partner → PowerSell | Not read | |
-| 54 | Webhook | Available Stock Change Push | — | — | Partner → PowerSell | Not read | For self-managed inventory OMS |
-| 55 | Webhook | Inventory Change Push | — | — | Partner → PowerSell | Not read | |
-| 56 | Webhook | Order Status Push | — | — | Partner → PowerSell | Not read | Excludes return orders |
-| 57 | Webhook | Return Order Status Push | — | — | Partner → PowerSell | Not read | |
-| 58 | Webhook | Product Update Push | — | — | Partner → PowerSell | Not read | |
-| 59 | Webhook | Direct RTS | — | — | Partner → PowerSell | Not read | "Avoid PNR issue" |
-| 60 | Webhook | Sale Invoice Request | — | — | Partner → PowerSell | Not read | ERP invoice |
-| 61 | Webhook | Abnormal Inventory Change Push | — | — | Partner → PowerSell | Not read | |
-
-**Not seen in the index (to confirm once pages are read):** get warehouse list (Q-01).
+| 1 | Config | Province | GET | `/api/v3/location/{country_code}/provinces/` | PowerSell → Partner | Good |  |
+| 2 | Config | District | GET | `/api/v3/location/{country_code}/provinces/{province_id}/districts/` | PowerSell → Partner | Good |  |
+| 3 | Config | Sub-district | GET | `/api/v2/sellers/locations/{country_code}/provinces/{province_id}/districts/{district_id}/sub-districts` | PowerSell → Partner | Good |  |
+| 4 | Config | Lookup zipcode | GET | `/pi/v2/sellers/locations/{country_code}/zipcodes` | PowerSell → Partner | Partial | Path typo `/pi/v2/` in doc |
+| 5 | Config | Get Pickup List | GET | `/api/v2/sellers/pickup` | PowerSell → Partner | Missing samples | Lists Boxme warehouses (`pickup_id`, `warehouse_code`) |
+| 6 | Config | Create Pickup Address | POST | `/api/v2/sellers/pickup/create` | PowerSell → Partner | Good |  |
+| 7 | Config | Active / Deactive Pickup | PUT | `/api/v2/sellers/pickup/{pickup_id}/toggle-active` | PowerSell → Partner | Good |  |
+| 8 | Product | Create Product | POST | `/api/v2.1/sellers/products/create/` | PowerSell → Partner | Good | 27 mandatory fields; 1 rps |
+| 9 | Product | Get Category Tree | GET | `/api/v2.1/sellers/products/categories/` | PowerSell → Partner | Good |  |
+| 10 | Product | Get Products | GET | `/api/v2.1/sellers/products/list` | PowerSell → Partner | Missing samples | 1 rps, 30/min |
+| 11 | Product | Get Product Units | GET | `/api/v2.1/sellers/products/uom` | PowerSell → Partner | Good |  |
+| 12 | Product | Deactive Product | PUT | `/api/v2.1/sellers/products/selling/` | PowerSell → Partner | Partial |  |
+| 13 | Product | Update Product | PUT | `/api/v2.1/sellers/products/update/{bsin}/` | PowerSell → Partner | Good |  |
+| 14 | Product | Get Stock Available | POST | `/api/v2.1/sellers/products/get_stock/` | PowerSell → Partner | Good | Max 20 SKUs; 1 rps |
+| 15 | Product | Reserved Stock | PUT | `/api/v2.1/sellers/products/update_reserve/` | PowerSell → Partner | Partial | Max 20 SKUs |
+| 16 | Product | Get Stock Report | POST | `/api/v2/sellers/wms/products/report/stocks/` | PowerSell → Partner | Good | Batch / expiry; 1 rps, 30/min |
+| 17 | Product | Get Stock Report (V3) | POST | `/api/v3/public/inventory/report-stocks/` | PowerSell → Partner | Good |  |
+| 18 | Inbound | Create Inbound Shipment (ASN) | POST | `/api/v2/sellers/shipments/` | PowerSell → Partner | Good | Duplicate PO rejected |
+| 19 | Inbound | Cancel ASN | POST | `/api/v2/sellers/shipments/cancel/{shipment_code}/` | PowerSell → Partner | Good |  |
+| 20 | Inbound | Get Shipment Detail | GET | `/api/v2/sellers/shipments/{shipment_code}/` | PowerSell → Partner | Good |  |
+| 21 | Inbound | Get Receiving Note (GRN) | GET | `/api/v2/sellers/shipments/receiving/{shipment_code}/` | PowerSell → Partner | Good |  |
+| 22 | Inbound | Get Inbound Serial List | GET | `/api/v2/sellers/shipments/receiving_serial/{shipment_code}/` | PowerSell → Partner | Good |  |
+| 23 | Inbound | Create ASN Booking | POST | `/api/v2/sellers/shipments/booking/create/` | PowerSell → Partner | Good | Timeslot booking |
+| 24 | Inbound | Get ASN Available Timeslot | POST | `/api/v2/sellers/shipments/booking/get-time-slots/` | PowerSell → Partner | Good |  |
+| 25 | Inbound | Cancel ASN Booking | POST | `/api/v2/sellers/shipments/booking/cancel/{booking_id}/` | PowerSell → Partner | Good |  |
+| 26 | Inbound | Get Shipment List | GET | `/api/v2/sellers/shipments/` | PowerSell → Partner | Good |  |
+| 27 | Outbound | Get Shipping Option (Fulfillment) | POST | `/api/v2/courier/pricing/calculate` | PowerSell → Partner | Good |  |
+| 28 | Outbound | Get Shipping Option (Dropship) | POST | `/api/v2/courier/pricing/calculate` | PowerSell → Partner | Good |  |
+| 29 | Outbound | Create B2C Order | POST | `/api/v2/courier/pricing/b2c/create_order` | PowerSell → Partner | Good | 2 rps/IP; `BM_DBS` for marketplace shipping |
+| 30 | Outbound | Create Delivery Order | POST | `/api/v2/courier/pricing/ship/create_order` | PowerSell → Partner | Good |  |
+| 31 | Outbound | Create B2B Order | POST | `/api/v2/courier/pricing/b2b/create_order` | PowerSell → Partner | Good |  |
+| 32 | Outbound | Update Document | PUT | `/api/v2/orders/{tracking_number}/update_document/` | PowerSell → Partner | Partial | Label / invoice / PO upload |
+| 33 | Outbound | Request Cancel Delivery Order | POST | `/api/v2/orders/cancel-delivery/{tracking_number}/` | PowerSell → Partner | Partial | After shipped; limited sellers |
+| 34 | Outbound | Cancel Order | POST | `/api/v2/orders/cancel/{tracking_number}/` | PowerSell → Partner | Good |  |
+| 35 | Outbound | Get Order | GET | `/api/v2/orders/{tracking_number}/` | PowerSell → Partner | Missing samples | 60 req/min |
+| 36 | Outbound | Get Order List | GET | `/api/v2/orders/list` | PowerSell → Partner | Missing samples | 1 rps, 30/min |
+| 37 | Outbound | Get Courier List | GET | `/api/v2/courier/names` | PowerSell → Partner | Good |  |
+| 38 | Outbound | Get Courier Service | GET | `/api/v2/courier/services` | PowerSell → Partner | Good |  |
+| 39 | Outbound | Get Packed Items | GET | `/api/v2/orders/pack/{tracking_number}/` | PowerSell → Partner | Missing samples |  |
+| 40 | Outbound | Order Pack | PUT | `/api/v2/orders/fulfill/pack/` | PowerSell → Partner | Good | Label + courier tracking for marketplace shipping; `fulfill_type` priority / now |
+| 41 | Outbound | Get B2B Pickup TimeSlot | GET | `/api/v2/courier/pricing/b2b/pickup-time-slots` | PowerSell → Partner | Good |  |
+| 42 | Outbound | Get Tracking | GET | `/api/v2/orders/tracking/{tracking_number}/` | PowerSell → Partner | Good |  |
+| 43 | Return | Create Returns Order | POST | `/api/v2/orders/rma/create/{tracking_number}/` | PowerSell → Partner | Partial | Placeholder mandatory field `01HTPRXX…` in doc |
+| 44 | Return | Get Returns Order | GET | `/api/v2/orders/rma/list/` | PowerSell → Partner | Partial |  |
+| 45 | Return | Get Order Returns Receive | GET | `/api/v2/orders/rma/received/{return_tracking_number}/` | PowerSell → Partner | Partial |  |
+| 46 | Return | Cancel Returns Order | DELETE | `/api/v2/orders/rma/cancel/{return_tracking_number}/` | PowerSell → Partner | Missing samples | Response not documented |
+| 47 | Other | Create B2B Customer | POST | `/api/v2/orders/customers/create/` | PowerSell → Partner | Good |  |
+| 48 | Other | Get Customer | GET | `/api/v2/orders/customers/list/` | PowerSell → Partner | Good |  |
+| 49 | Other | Update Customer | PUT | `/api/v2/orders/customers/update/{customer_id}/` | PowerSell → Partner | Good |  |
+| 50 | Other | Get COD Statements List | GET | `/` | PowerSell → Partner | Missing samples | Path shown as `/` |
+| 51 | Other | Get COD Statement Transactions | GET | `/` | PowerSell → Partner | Missing samples | Path shown as `/` |
+| 52 | Other | Get Order Fee | POST | `/host/api/v2/orders/finance/order_fees/{tracking_number}/` | PowerSell → Partner | Good |  |
+| 53 | Webhook | Shipment (ASN) Status Push | POST (to our URL) | — | Partner → PowerSell | Good | Status only, no quantities |
+| 54 | Webhook | Available Stock Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Sellable stock |
+| 55 | Webhook | Inventory Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Physical stock |
+| 56 | Webhook | Order Status Push | POST (to our URL) | — | Partner → PowerSell | Good | Excludes returns |
+| 57 | Webhook | Return Order Status Push | POST (to our URL) | — | Partner → PowerSell | Good | Status only, no quantities |
+| 58 | Webhook | Product Update Push | POST (to our URL) | — | Partner → PowerSell | Good |  |
+| 59 | Webhook | Direct RTS | POST (to our URL) | — | Partner → PowerSell | Partial | Lazada RTS; placeholder field `01HYD3…` in doc |
+| 60 | Webhook | Sale Invoice Request | POST (to our URL) | — | Partner → PowerSell | Good | ERP invoice request |
+| 61 | Webhook | Abnormal Inventory Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Damage / loss / cycle count reason |
