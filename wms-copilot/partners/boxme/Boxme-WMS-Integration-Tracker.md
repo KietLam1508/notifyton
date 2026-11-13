@@ -115,6 +115,7 @@
 | Endpoint inventory | Below | 2026-11-13 | Current |
 | Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, confirmed | Current |
 | System logic notes | `Boxme-System-Logic-Notes.md` (Confluence: [TBD]) | 2026-11-13, from doc only | Current: smoke tests not run |
+| Smoke test collection (Batch B) | Postman, personal workspace: "Boxme – S3 smoke tests (Batch B)" (uid 2708496-859b0705-c4bf-42f8-9ef1-b6ff104ade9a). API key is NOT stored in it | 2026-11-13 | Ready to run after Q-35 and IP whitelisting |
 
 ---
 
@@ -128,6 +129,7 @@
 | 2026-11-13 | PIC confirmed scores; total 96 / Proceed. G1 presented for decision |
 | 2026-11-13 | G1 approved by PIC. S3 started: logic notes, 42 checks, draft status mappings, 23-step smoke test plan, partner question message drafted (not sent). Waiting on Boxme answers and test account |
 | 2026-11-13 | Boxme test seller account and API key received (production, no cost). Credentials kept out of this tracker. Copilot environment cannot reach `s.boxme.asia` (blocked network, and Boxme requires a whitelisted calling IP), so smoke tests will run from a whitelisted machine |
+| 2026-11-13 | Batch B smoke-test collection created in Postman (27 requests, test data prefixed PS-TEST-). Two more doc inconsistencies logged (D-07 return body, D-08 ASN arrival time format) |
 
 ---
 

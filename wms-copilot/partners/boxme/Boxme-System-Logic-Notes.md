@@ -185,6 +185,8 @@ still to be arranged (Q-05, Q-35).
 
 ## 3. Smoke tests
 
+**Postman collection:** "Boxme – S3 smoke tests (Batch B)" in Kiet Lam's personal Postman workspace (27 requests; TC-S01, S02 read-only parts folded into setup TC-S00a/b). Steps needing Boxme staff (S09, S19, S20, S23) stay as a checklist.
+
 **Environment:** production `https://s.boxme.asia`, Boxme test seller account (no cost) ·
 **Run by:** [user / QC] · **Run on:** [date]
 
@@ -232,6 +234,8 @@ No staging results yet. Inconsistencies **inside the document**, to confirm duri
 | D-04 | Direct RTS webhook | Field named `01HYD3H7Z5KMAEP89ME3QJRPJ6` | Not tested | Unclear payload | L-24 | Q-10 |
 | D-05 | Lookup zipcode | Path `/pi/v2/…` | Not tested | Likely `/api/v2/…` | L-14 | Q-10 |
 | D-06 | Changelog 11-06-2026 | "Test against the staging environment" | No staging exists (PIC) | — | L-42 | — |
+| D-07 | Create Returns Order | Schema: items use `seller_sku`; requires `return_order_number`, `courier_tracking_number` | Doc example uses `sku` and omits those fields | Unclear which body Boxme accepts; tested in TC-S17 | L-07 | Q-10 |
+| D-08 | Create ASN | Schema: `estimate_arrived_time` is an integer timestamp | Doc example sends `"21/12/2023"` (text) | Wrong format may be rejected; TC-S06 sends a timestamp | L-13 | Q-10 |
 
 ---
 
