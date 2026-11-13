@@ -196,7 +196,7 @@ still to be arranged (Q-05, Q-35).
 
 | TC | Step | Request (endpoint + key inputs) | What to check | Proves | Result | Evidence |
 |---|---|---|---|---|---|---|
-| TC-S01 | Auth | `GET /api/v2/sellers/pickup` with `Authorization: Token <key>` | 200; list returned. Then call with a wrong key: 401 `authentication_failed` | L-37 | Not run | |
+| TC-S01 | Auth | `GET /api/v2/sellers/pickup` with `Authorization: Token <key>` | 200; list returned. Then call with a wrong key: 401 `authentication_failed` | L-37 | Partial | Run 1: empty key → 403 `authentication_failed` (not 401, see D-09). Valid-key call not yet run |
 | TC-S02 | Get warehouses | `GET /api/v2/sellers/pickup` | Which entries are Boxme warehouses vs seller addresses (`warehouse_code`) | L-08 | Not run | |
 | TC-S03 | Create product | `POST /api/v2.1/sellers/products/create/` with 2 barcodes, `volume` `10x20x30` | `bsin` returned; approval status; volume unit shown in the Boxme web portal | L-01, L-02, L-03, L-09, L-15 | Not run | |
 | TC-S04 | Create same product again | Same body | `seller_sku_existed` with existing `bsin` | L-39 | Not run | |
@@ -236,6 +236,7 @@ No staging results yet. Inconsistencies **inside the document**, to confirm duri
 | D-06 | Changelog 11-06-2026 | "Test against the staging environment" | No staging exists (PIC) | — | L-42 | — |
 | D-07 | Create Returns Order | Schema: items use `seller_sku`; requires `return_order_number`, `courier_tracking_number` | Doc example uses `sku` and omits those fields | Unclear which body Boxme accepts; tested in TC-S17 | L-07 | Q-10 |
 | D-08 | Create ASN | Schema: `estimate_arrived_time` is an integer timestamp | Doc example sends `"21/12/2023"` (text) | Wrong format may be rejected; TC-S06 sends a timestamp | L-13 | Q-10 |
+| D-09 | All endpoints | Missing / invalid key → `authentication_failed`, HTTP **401** (Common Errors) | Run 1 (2026-11-13): HTTP **403** `authentication_failed`, "Invalid token header. No credentials provided." Some endpoints say "Invalid Authorization header" instead | Error handling must treat 403 + `authentication_failed` as a credential problem, not only 401; don't match on message text | L-37, L-40 | — |
 
 ---
 

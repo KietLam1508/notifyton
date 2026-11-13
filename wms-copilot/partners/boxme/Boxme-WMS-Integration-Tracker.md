@@ -130,6 +130,7 @@
 | 2026-11-13 | G1 approved by PIC. S3 started: logic notes, 42 checks, draft status mappings, 23-step smoke test plan, partner question message drafted (not sent). Waiting on Boxme answers and test account |
 | 2026-11-13 | Boxme test seller account and API key received (production, no cost). Credentials kept out of this tracker. Copilot environment cannot reach `s.boxme.asia` (blocked network, and Boxme requires a whitelisted calling IP), so smoke tests will run from a whitelisted machine |
 | 2026-11-13 | Batch B smoke-test collection created in Postman (27 requests, test data prefixed PS-TEST-). Two more doc inconsistencies logged (D-07 return body, D-08 ASN arrival time format) |
+| 2026-11-13 | Smoke test run 1 (whole collection): all calls rejected, 403 `authentication_failed` "No credentials provided" because `api_key` variable was empty. Nothing created at Boxme. Boxme API reachable from the tester's machine. Logged D-09 (403 instead of documented 401). Next: set key as current value, send TC-S00a alone, then run folder by folder |
 
 ---
 
