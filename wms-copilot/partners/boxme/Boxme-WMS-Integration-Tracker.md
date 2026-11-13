@@ -5,8 +5,8 @@
 | **Partner** | Boxme |
 | **Country** | [TBD] (Boxme operates in Philippines, Thailand, Vietnam) |
 | **Overall status** | Active |
-| **Current stage** | S2 Evaluate (waiting on gate G1) |
-| **Next action** | WMS partner PIC decides G1 (recommendation: Proceed, score 96) |
+| **Current stage** | S3 Validate (waiting on partner) |
+| **Next action** | Send question message to Boxme (14 blocking questions); get test account and agree test-order handling with Boxme ops; then run smoke tests |
 | **Owner** | [TBD] |
 | **Partner contact** | Dedicated contact exists (name [TBD]); doc lists tech@boxme.asia, support@boxme.asia |
 | **Brands / ventures requesting** | [TBD] |
@@ -25,8 +25,8 @@
 | Stage | Status | Gate | Gate decision | Decided by | Date | Main output |
 |---|---|---|---|---|---|---|
 | S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
-| S2 Evaluate | Waiting on gate | G1 Go / no-go | | | | Evaluation scorecard: 96, Proceed |
-| S3 Validate | Not started | G2 Logic understood | | | | System logic notes |
+| S2 Evaluate | Done | G1 Go / no-go | Approve | WMS partner PIC | 2026-11-13 | Evaluation scorecard: 96, Proceed |
+| S3 Validate | Waiting on partner | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
 | S4 Use-case fit | Not started | G3 Scope agreed | | | | Use-case fit page |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
 | S6 Dev & testing | Not started | — | — | — | | Jira stories, QC test cases |
@@ -43,6 +43,7 @@
 | 2026-11-13 | S1 | Run Boxme as a new partner, without reusing the old Boxme V2 mapping | WMS partner PIC | Test of the updated copilot |
 | 2026-11-13 | S2 | "Varies" scores confirmed (rows 5, 7, 8, 9, 11, 13, 17, 19, 21, 22, 24, 27); partner-level rows answered (1, 2, 32, 33, 34). Total 96 | WMS partner PIC | Rows 1, 33, 34 scored by copilot from PIC's facts |
 | 2026-11-13 | S2 | Status-only ASN and return webhooks accepted; PowerSell will fetch quantities by API | WMS partner PIC | |
+| 2026-11-13 | G1 | **Approve**: proceed to S3 | WMS partner PIC | Score 96. Rate limits (R-01), testing on production (R-03) and IP / key expiry (R-04) carried as risks |
 
 ---
 
@@ -69,6 +70,21 @@
 | Q-18 | Due diligence 6: Please share details about the scalability, error handling, and response efficiency of each API. | Due diligence | N | | | | |
 | Q-19 | Due diligence 7: What backup and disaster recovery plans are in place? | Due diligence | N | | Partly in doc: RTO 8 h, RPO 1 min–24 h | | |
 | Q-20 | Due diligence 8: How do you handle API downtime, failures, or outages, and what is the incident response time? | Due diligence | N | | | | |
+| Q-21 | What unit is product `volume` (LxWxH): cm or mm? | Data model | Y | | | | L-09, UC-02 |
+| Q-22 | Which field is checked for duplicate orders (`referral.order_number`, `store_order_id`, both)? Can an order cancelled for out-of-stock be re-created with the same number? | API behaviour | Y | | | | L-04, L-05, UC-09 |
+| Q-23 | In Get Pickup List, how do we tell Boxme warehouses from seller pickup addresses? | Data model | N | | | | L-08, UC-01 |
+| Q-24 | If fewer items arrive than expected, does the ASN still end in 6 Completed? | Status | Y | | | | L-21, UC-08 |
+| Q-25 | Get Receiving Note: one row per receipt, or one total row per SKU / condition / batch? | API behaviour | Y | | | | L-28, UC-08 |
+| Q-26 | Meaning and next step for order statuses 302, 605/606, 704, 706, 708; difference between 300 Shipped and 801 Fulfilled | Status | Y | | | | L-22, UC-13 |
+| Q-27 | Return status after Cancel Returns Order; response of that endpoint | Status | Y | | | | L-25, UC-17 |
+| Q-28 | Meaning of condition levels L and DE; are D1–D3 all non-sellable? | Status | Y | | | | L-26, UC-08, UC-16 |
+| Q-29 | Can part of an order (some items) be cancelled? | API behaviour | Y | | | | L-32, UC-11 |
+| Q-30 | Confirm Boxme picks only after Order Pack with label; what to send as `courier_tracking_code` for Shopee orders without tracking; when Direct RTS is sent | API behaviour | Y | | | | L-24, L-33, UC-12 |
+| Q-31 | Does Create B2C Order accept masked phone / address? What should we send? | Data model | Y | | | | L-14, UC-09 |
+| Q-32 | Which location IDs to send after the new Vietnam location database; how reliable is name-only matching? | Data model | N | | | | L-14, UC-09 |
+| Q-33 | Recommended default values for required product fields PowerSell may not hold | Data model | N | | | | L-15, UC-02 |
+| Q-34 | Can webhooks arrive out of order? Is `update_time` reliable? Is the webhook token the same for all sellers? | Webhook | N | | | | L-41 |
+| Q-35 | How should test orders and ASNs on the production test account be handled so the warehouse doesn't process them? | Environment | Y | | | | S3 smoke tests, R-03 |
 
 (Q-06 merged into Q-02.)
 
@@ -83,6 +99,10 @@
 | R-03 | No staging: testing uses a test seller account on production. Test orders and ASNs may enter the real warehouse queue | All | Agree a test plan with Boxme ops (which test orders get cancelled, who watches the queue) before S3 smoke tests | [TBD] | Open |
 | R-04 | Since 25/07/2026: IP whitelist (re-confirm every 180 days) and API keys expire after max 365 days. If missed, all calls fail (403 / 401) | All | Calendar reminders; alert on 401 / 403; one owner per seller account | [TBD] | Open |
 | R-05 | ASN and return webhooks carry no quantities | UC-08, UC-16 | Fetch receiving note (GRN) / returns-receive when status is Completed / Returned | [TBD] | Accepted by PIC 2026-11-13 |
+| R-07 | 6 Boxme order statuses have no PowerSell match (302, 605/606, 704, 706, 708; 801 vs 300 unclear) | UC-13 | Decide mapping after Q-26 | [TBD] | Open |
+| R-08 | No partial (line-level) order cancellation documented | UC-11 | Full cancel and re-create (to discuss in S4) after Q-29 | [TBD] | Open |
+| R-09 | Boxme storage conditions are Normal or Air-con only; chilled / frozen products have no match | UC-02 | Check in S4 whether requesting brands sell chilled / frozen goods | [TBD] | Open |
+| R-10 | Marketplace orders: Boxme picks only after PowerSell sends the AWB (Order Pack), the reverse of most WMS. Delays in getting the AWB delay picking | UC-09, UC-12 | Confirm (Q-30); check against PowerSell RTS logic in S4 | [TBD] | Open |
 | R-06 | Create Product needs 27 mandatory fields, some of which PowerSell may not hold (Boxme category ID, packing material, wholesale price, GS1 flag) | UC-02 | Default rules per field (S3 check L-15) | [TBD] | Open |
 
 ---
@@ -94,6 +114,7 @@
 | Partner API document | https://developers.boxme.asia/doc-393601 (full export uploaded by user) | Latest changelog 11-06-2026 | Current |
 | Endpoint inventory | Below | 2026-11-13 | Current |
 | Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, confirmed | Current |
+| System logic notes | `Boxme-System-Logic-Notes.md` (Confluence: [TBD]) | 2026-11-13, from doc only | Current: smoke tests not run |
 
 ---
 
@@ -105,6 +126,7 @@
 | 2026-11-13 | S1 done: 61 endpoints inventoried (44 good, 9 partial, 8 missing samples) |
 | 2026-11-13 | S2 draft scorecard: 72 / Proceed with caveats. Waiting on PIC to confirm 13 "varies" rows and score rows 1, 2, 32, 33, 34 before G1 |
 | 2026-11-13 | PIC confirmed scores; total 96 / Proceed. G1 presented for decision |
+| 2026-11-13 | G1 approved by PIC. S3 started: logic notes, 42 checks, draft status mappings, 23-step smoke test plan, partner question message drafted (not sent). Waiting on Boxme answers and test account |
 
 ---
 
