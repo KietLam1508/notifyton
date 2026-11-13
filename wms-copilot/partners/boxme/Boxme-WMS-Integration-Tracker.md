@@ -27,7 +27,7 @@
 | S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
 | S2 Evaluate | Done | G1 Go / no-go | Approve | WMS partner PIC | 2026-11-13 | Evaluation scorecard: 96, Proceed |
 | S3 Validate | Waiting on partner (smoke tests deferred) | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
-| S4 Use-case fit | Waiting on partner | G3 Scope agreed | Hold (recommended) | | | Use-case fit (draft): ✅ 5, 🟡 6, ❓ 7 (all Must) |
+| S4 Use-case fit | Waiting on partner | G3 Scope agreed | Hold (recommended) | | | Use-case fit (draft): ✅ 5, 🟡 5, ❓ 8 (all Must) |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
 | S6 Dev & testing | Not started | — | — | — | | Jira stories, QC test cases |
 | S7 UAT | Not started | G5 UAT sign-off | | | | UAT script |
@@ -45,6 +45,7 @@
 | 2026-11-13 | S2 | Status-only ASN and return webhooks accepted; PowerSell will fetch quantities by API | WMS partner PIC | |
 | 2026-11-13 | G1 | **Approve**: proceed to S3 | WMS partner PIC | Score 96. Rate limits (R-01), testing on production (R-03) and IP / key expiry (R-04) carried as risks |
 | 2026-11-13 | S3 | Smoke tests **deferred**: PIC cannot run Postman. To be run later (by QC / dev) before G2 is decided and before S5. S4 started early with doc-based ratings, marked "(doc)" | WMS partner PIC | G2 condition 3 stays open |
+| 2026-11-13 | S4 | Brand context: brands use **both** marketplace delivery and Boxme delivery → UC-14 becomes Must, Phase 1. Webhooks are set by the brand's business user in Boxme's portal using PowerSell's user guide | WMS partner PIC | |
 
 ---
 
@@ -82,7 +83,7 @@
 | Q-29 | Can part of an order (some items) be cancelled? | API behaviour | Y | | | | L-32, UC-11 |
 | Q-30 | Confirm Boxme picks only after Order Pack with label; what to send as `courier_tracking_code` for Shopee orders without tracking; when Direct RTS is sent | API behaviour | Y | | | | L-24, L-33, UC-12 |
 | Q-31 | Does Create B2C Order accept masked phone / address? What should we send? | Data model | Y | | | | L-14, UC-09 |
-| Q-32 | Which location IDs to send after the new Vietnam location database; how reliable is name-only matching? | Data model | N | | | | L-14, UC-09 |
+| Q-32 | Which location IDs to send after the new Vietnam location database; how reliable is name-only matching? | Data model | Y | | | | L-14, UC-09 |
 | Q-33 | Recommended default values for required product fields PowerSell may not hold | Data model | N | | | | L-15, UC-02 |
 | Q-34 | Can webhooks arrive out of order? Is `update_time` reliable? Is the webhook token the same for all sellers? | Webhook | N | | | | L-41 |
 | Q-35 | How should test orders and ASNs on the production test account be handled so the warehouse doesn't process them? | Environment | Y | | | | S3 smoke tests, R-03 |
@@ -106,7 +107,8 @@
 | R-10 | Marketplace orders: Boxme picks only after PowerSell sends the AWB (Order Pack), the reverse of most WMS. Delays in getting the AWB delay picking | UC-09, UC-12 | Confirm (Q-30); check against PowerSell RTS logic in S4 | [TBD] | Open |
 | R-06 | Create Product needs 27 mandatory fields, some of which PowerSell may not hold (Boxme category ID, packing material, wholesale price, GS1 flag) | UC-02 | Default rules per field (S3 check L-15) | [TBD] | Open |
 | R-11 | W-01: single-item cancellation likely needs full cancel + re-create | UC-11 | Automate in PowerSell (dev) or CS does it by hand ([TBD] × 5 min / order) | Order & Return Management owner | Open (pending Q-29) |
-| R-12 | W-02: webhook URL must be set per brand in Boxme's portal | UC-18 | Ops sets it at brand onboarding (~10 min / brand) | Ops [TBD] | Open |
+| R-12 | W-02: webhook URL must be set per brand in Boxme's portal | UC-18 | Brand's business user sets it from the Boxme connection user guide (~10 min / brand) | Brand business user (PIC, 2026-11-13) | Mitigated: existing practice; include URL + steps in user guide (S8) |
+| R-13 | Mixed delivery: brands use both marketplace and Boxme delivery. Rule for which orders use which is not defined | UC-12, UC-14 | Proposed: marketplace orders → marketplace logistics; webstore / other → Boxme delivery | [TBD] | Open |
 
 ---
 
@@ -210,3 +212,4 @@ Product and Create ASN show an error example on the endpoint itself.
 | 60 | Webhook | Sale Invoice Request | POST (to our URL) | — | Partner → PowerSell | Good | ERP invoice request |
 | 61 | Webhook | Abnormal Inventory Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Damage / loss / cycle count reason |
 | 2026-11-13 | S4 draft: 18 use cases rated from the document (✅ 5, 🟡 6, ❓ 7 — all 7 Must, waiting on Boxme answers). Brand context assumed from S2 scores. Phase 1 = all except UC-14 (Boxme delivery → Later). G3 recommendation: Hold. 3 workarounds costed (W-01 to W-03) |
+| 2026-11-13 | PIC: both delivery types used; webhook set by brand business user via user guide. S4 updated: UC-14 Must / Phase 1 (❓ pending Q-31, Q-32); Q-32 now blocking; R-13 added (rule for which orders use Boxme delivery) |
