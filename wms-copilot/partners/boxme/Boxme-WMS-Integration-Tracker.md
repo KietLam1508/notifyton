@@ -55,7 +55,7 @@
 | Q-02 | Rate limits are per IP (Create Order 2 rps, Create Product 1 rps, Get Order 60/min). PowerSell sends for many sellers from the same servers. Are limits per IP or per API key, and can they be raised for PowerSell? What happens on 11.11 when limits are hit (`traffic_limit` 503)? | Rate limit | Y | | | | S2 #4, L-38, UC-09 |
 | Q-03 | How do we send the marketplace AWB / label? | API behaviour | N | — | **Answered by doc:** Order Pack (`shipping_label` URL + `courier_tracking_code`); Update Document (`type: label`) | 2026-11-13 | S2 #17, UC-12 |
 | Q-04 | How are webhook URLs registered? | Webhook | N | — | **Partly answered by doc:** in the web portal (oms.boxme.asia), per seller account. See Q-12 | 2026-11-13 | S2 #27, UC-18 |
-| Q-05 | Is there a staging environment? | Environment | Y | — | **Answered by PIC:** no staging; Boxme provides a test seller account on production with no financial cost. Still to request: the test account and API key, and how Boxme ops handles test orders and ASNs | 2026-11-13 | S2 #1–2, S3 smoke tests |
+| Q-05 | Is there a staging environment? | Environment | Y | — | **Answered by PIC:** no staging; Boxme provides a test seller account on production with no financial cost. Test account and API key received 2026-11-13 (stored outside this tracker). Still open: how Boxme ops handles test orders and ASNs (Q-35) | 2026-11-13 | S2 #1–2, S3 smoke tests |
 | Q-07 | Until which status can we cancel: an order (Cancel Order), an ASN (Cancel ASN), a return (Cancel Returns Order)? | API behaviour | Y | | | | S2 #12, #16, #25, UC-07, UC-11, UC-17 |
 | Q-08 | Shelf-life unit: Create Product says `expiry_threshold` and `min_inbound_shelf_life` are in **days**, Update Product and Get Products say **months**. Which is correct? | Data model | Y | | | | L-12, UC-02 |
 | Q-09 | The ASN and return webhooks carry status only. Can received quantities be added? | Webhook | N | — | **Not needed:** PIC accepts fetching quantities by API | 2026-11-13 | S2 #28, #31, UC-08, UC-16 |
@@ -127,6 +127,7 @@
 | 2026-11-13 | S2 draft scorecard: 72 / Proceed with caveats. Waiting on PIC to confirm 13 "varies" rows and score rows 1, 2, 32, 33, 34 before G1 |
 | 2026-11-13 | PIC confirmed scores; total 96 / Proceed. G1 presented for decision |
 | 2026-11-13 | G1 approved by PIC. S3 started: logic notes, 42 checks, draft status mappings, 23-step smoke test plan, partner question message drafted (not sent). Waiting on Boxme answers and test account |
+| 2026-11-13 | Boxme test seller account and API key received (production, no cost). Credentials kept out of this tracker. Copilot environment cannot reach `s.boxme.asia` (blocked network, and Boxme requires a whitelisted calling IP), so smoke tests will run from a whitelisted machine |
 
 ---
 
