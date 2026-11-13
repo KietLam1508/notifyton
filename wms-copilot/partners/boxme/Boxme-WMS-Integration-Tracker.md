@@ -5,8 +5,8 @@
 | **Partner** | Boxme |
 | **Country** | [TBD] (Boxme operates in Philippines, Thailand, Vietnam) |
 | **Overall status** | Active |
-| **Current stage** | S3 Validate (waiting on partner) |
-| **Next action** | Send question message to Boxme (14 blocking questions); get test account and agree test-order handling with Boxme ops; then run smoke tests |
+| **Current stage** | S4 Use-case fit (started before G2; ratings doc-based) |
+| **Next action** | PIC answers brand-context questions (S4); in parallel send question message to Boxme. Smoke tests deferred (run before G2 / S5) |
 | **Owner** | [TBD] |
 | **Partner contact** | Dedicated contact exists (name [TBD]); doc lists tech@boxme.asia, support@boxme.asia |
 | **Brands / ventures requesting** | [TBD] |
@@ -26,8 +26,8 @@
 |---|---|---|---|---|---|---|
 | S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
 | S2 Evaluate | Done | G1 Go / no-go | Approve | WMS partner PIC | 2026-11-13 | Evaluation scorecard: 96, Proceed |
-| S3 Validate | Waiting on partner | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
-| S4 Use-case fit | Not started | G3 Scope agreed | | | | Use-case fit page |
+| S3 Validate | Waiting on partner (smoke tests deferred) | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
+| S4 Use-case fit | In progress | G3 Scope agreed | | | | Use-case fit page |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
 | S6 Dev & testing | Not started | — | — | — | | Jira stories, QC test cases |
 | S7 UAT | Not started | G5 UAT sign-off | | | | UAT script |
@@ -44,6 +44,7 @@
 | 2026-11-13 | S2 | "Varies" scores confirmed (rows 5, 7, 8, 9, 11, 13, 17, 19, 21, 22, 24, 27); partner-level rows answered (1, 2, 32, 33, 34). Total 96 | WMS partner PIC | Rows 1, 33, 34 scored by copilot from PIC's facts |
 | 2026-11-13 | S2 | Status-only ASN and return webhooks accepted; PowerSell will fetch quantities by API | WMS partner PIC | |
 | 2026-11-13 | G1 | **Approve**: proceed to S3 | WMS partner PIC | Score 96. Rate limits (R-01), testing on production (R-03) and IP / key expiry (R-04) carried as risks |
+| 2026-11-13 | S3 | Smoke tests **deferred**: PIC cannot run Postman. To be run later (by QC / dev) before G2 is decided and before S5. S4 started early with doc-based ratings, marked "(doc)" | WMS partner PIC | G2 condition 3 stays open |
 
 ---
 
@@ -131,6 +132,7 @@
 | 2026-11-13 | Boxme test seller account and API key received (production, no cost). Credentials kept out of this tracker. Copilot environment cannot reach `s.boxme.asia` (blocked network, and Boxme requires a whitelisted calling IP), so smoke tests will run from a whitelisted machine |
 | 2026-11-13 | Batch B smoke-test collection created in Postman (27 requests, test data prefixed PS-TEST-). Two more doc inconsistencies logged (D-07 return body, D-08 ASN arrival time format) |
 | 2026-11-13 | Smoke test run 1 (whole collection): all calls rejected, 403 `authentication_failed` "No credentials provided" because `api_key` variable was empty. Nothing created at Boxme. Boxme API reachable from the tester's machine. Logged D-09 (403 instead of documented 401). Next: set key as current value, send TC-S00a alone, then run folder by folder |
+| 2026-11-13 | Smoke tests deferred at PIC request. S4 started before G2 (warned: ratings rest on the document and must be re-checked after tests) |
 
 ---
 
