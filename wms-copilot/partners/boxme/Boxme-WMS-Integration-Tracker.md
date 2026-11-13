@@ -6,7 +6,7 @@
 | **Country** | [TBD] (Boxme operates in Philippines, Thailand, Vietnam) |
 | **Overall status** | Active |
 | **Current stage** | S4 Use-case fit (started before G2; ratings doc-based) |
-| **Next action** | PIC answers brand-context questions (S4); in parallel send question message to Boxme. Smoke tests deferred (run before G2 / S5) |
+| **Next action** | Send question message to Boxme (answers unblock 7 Must use cases); PIC confirms brand context and "varies" priorities (Use-Case Fit § 1); smoke tests by QC / dev |
 | **Owner** | [TBD] |
 | **Partner contact** | Dedicated contact exists (name [TBD]); doc lists tech@boxme.asia, support@boxme.asia |
 | **Brands / ventures requesting** | [TBD] |
@@ -27,7 +27,7 @@
 | S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
 | S2 Evaluate | Done | G1 Go / no-go | Approve | WMS partner PIC | 2026-11-13 | Evaluation scorecard: 96, Proceed |
 | S3 Validate | Waiting on partner (smoke tests deferred) | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
-| S4 Use-case fit | In progress | G3 Scope agreed | | | | Use-case fit page |
+| S4 Use-case fit | Waiting on partner | G3 Scope agreed | Hold (recommended) | | | Use-case fit (draft): ✅ 5, 🟡 6, ❓ 7 (all Must) |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
 | S6 Dev & testing | Not started | — | — | — | | Jira stories, QC test cases |
 | S7 UAT | Not started | G5 UAT sign-off | | | | UAT script |
@@ -105,6 +105,8 @@
 | R-09 | Boxme storage conditions are Normal or Air-con only; chilled / frozen products have no match | UC-02 | Check in S4 whether requesting brands sell chilled / frozen goods | [TBD] | Open |
 | R-10 | Marketplace orders: Boxme picks only after PowerSell sends the AWB (Order Pack), the reverse of most WMS. Delays in getting the AWB delay picking | UC-09, UC-12 | Confirm (Q-30); check against PowerSell RTS logic in S4 | [TBD] | Open |
 | R-06 | Create Product needs 27 mandatory fields, some of which PowerSell may not hold (Boxme category ID, packing material, wholesale price, GS1 flag) | UC-02 | Default rules per field (S3 check L-15) | [TBD] | Open |
+| R-11 | W-01: single-item cancellation likely needs full cancel + re-create | UC-11 | Automate in PowerSell (dev) or CS does it by hand ([TBD] × 5 min / order) | Order & Return Management owner | Open (pending Q-29) |
+| R-12 | W-02: webhook URL must be set per brand in Boxme's portal | UC-18 | Ops sets it at brand onboarding (~10 min / brand) | Ops [TBD] | Open |
 
 ---
 
@@ -117,6 +119,7 @@
 | Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, confirmed | Current |
 | System logic notes | `Boxme-System-Logic-Notes.md` (Confluence: [TBD]) | 2026-11-13, from doc only | Current: smoke tests not run |
 | Smoke test collection (Batch B) | Postman, personal workspace: "Boxme – S3 smoke tests (Batch B)" (uid 2708496-859b0705-c4bf-42f8-9ef1-b6ff104ade9a). API key is NOT stored in it | 2026-11-13 | Ready to run after Q-35 and IP whitelisting |
+| Use-case fit | `Boxme-Use-Case-Fit.md` (Confluence: [TBD]) | 2026-11-13, draft (doc-based, assumed brand context) | Current |
 
 ---
 
@@ -206,3 +209,4 @@ Product and Create ASN show an error example on the endpoint itself.
 | 59 | Webhook | Direct RTS | POST (to our URL) | — | Partner → PowerSell | Partial | Lazada RTS; placeholder field `01HYD3…` in doc |
 | 60 | Webhook | Sale Invoice Request | POST (to our URL) | — | Partner → PowerSell | Good | ERP invoice request |
 | 61 | Webhook | Abnormal Inventory Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Damage / loss / cycle count reason |
+| 2026-11-13 | S4 draft: 18 use cases rated from the document (✅ 5, 🟡 6, ❓ 7 — all 7 Must, waiting on Boxme answers). Brand context assumed from S2 scores. Phase 1 = all except UC-14 (Boxme delivery → Later). G3 recommendation: Hold. 3 workarounds costed (W-01 to W-03) |
