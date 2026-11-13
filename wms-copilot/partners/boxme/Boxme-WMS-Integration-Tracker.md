@@ -6,9 +6,9 @@
 | **Country** | [TBD] (Boxme operates in Philippines, Thailand, Vietnam) |
 | **Overall status** | Active |
 | **Current stage** | S2 Evaluate (waiting on gate G1) |
-| **Next action** | WMS partner PIC confirms 13 "varies" scores and scores rows 1, 2, 32, 33, 34, then decides G1 |
+| **Next action** | WMS partner PIC decides G1 (recommendation: Proceed, score 96) |
 | **Owner** | [TBD] |
-| **Partner contact** | [TBD] (doc lists tech@boxme.asia, support@boxme.asia) |
+| **Partner contact** | Dedicated contact exists (name [TBD]); doc lists tech@boxme.asia, support@boxme.asia |
 | **Brands / ventures requesting** | [TBD] |
 | **Target go-live** | [TBD] |
 | **Jira epic** | [TBD] |
@@ -25,7 +25,7 @@
 | Stage | Status | Gate | Gate decision | Decided by | Date | Main output |
 |---|---|---|---|---|---|---|
 | S1 Intake | Done | — | — | — | 2026-11-13 | Endpoint inventory (61 endpoints, below) |
-| S2 Evaluate | Waiting on gate | G1 Go / no-go | | | | Evaluation scorecard: 72, Proceed with caveats (draft) |
+| S2 Evaluate | Waiting on gate | G1 Go / no-go | | | | Evaluation scorecard: 96, Proceed |
 | S3 Validate | Not started | G2 Logic understood | | | | System logic notes |
 | S4 Use-case fit | Not started | G3 Scope agreed | | | | Use-case fit page |
 | S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
@@ -41,6 +41,8 @@
 | Date | Stage / gate | Decision | Decided by | Conditions / reason |
 |---|---|---|---|---|
 | 2026-11-13 | S1 | Run Boxme as a new partner, without reusing the old Boxme V2 mapping | WMS partner PIC | Test of the updated copilot |
+| 2026-11-13 | S2 | "Varies" scores confirmed (rows 5, 7, 8, 9, 11, 13, 17, 19, 21, 22, 24, 27); partner-level rows answered (1, 2, 32, 33, 34). Total 96 | WMS partner PIC | Rows 1, 33, 34 scored by copilot from PIC's facts |
+| 2026-11-13 | S2 | Status-only ASN and return webhooks accepted; PowerSell will fetch quantities by API | WMS partner PIC | |
 
 ---
 
@@ -52,10 +54,10 @@
 | Q-02 | Rate limits are per IP (Create Order 2 rps, Create Product 1 rps, Get Order 60/min). PowerSell sends for many sellers from the same servers. Are limits per IP or per API key, and can they be raised for PowerSell? What happens on 11.11 when limits are hit (`traffic_limit` 503)? | Rate limit | Y | | | | S2 #4, L-38, UC-09 |
 | Q-03 | How do we send the marketplace AWB / label? | API behaviour | N | — | **Answered by doc:** Order Pack (`shipping_label` URL + `courier_tracking_code`); Update Document (`type: label`) | 2026-11-13 | S2 #17, UC-12 |
 | Q-04 | How are webhook URLs registered? | Webhook | N | — | **Partly answered by doc:** in the web portal (oms.boxme.asia), per seller account. See Q-12 | 2026-11-13 | S2 #27, UC-18 |
-| Q-05 | Is there a staging environment? Please share the base URL, a test seller account and API key. The doc lists only production (`https://s.boxme.asia`) | Environment | Y | | | | S2 #1–2, S3 smoke tests |
+| Q-05 | Is there a staging environment? | Environment | Y | — | **Answered by PIC:** no staging; Boxme provides a test seller account on production with no financial cost. Still to request: the test account and API key, and how Boxme ops handles test orders and ASNs | 2026-11-13 | S2 #1–2, S3 smoke tests |
 | Q-07 | Until which status can we cancel: an order (Cancel Order), an ASN (Cancel ASN), a return (Cancel Returns Order)? | API behaviour | Y | | | | S2 #12, #16, #25, UC-07, UC-11, UC-17 |
 | Q-08 | Shelf-life unit: Create Product says `expiry_threshold` and `min_inbound_shelf_life` are in **days**, Update Product and Get Products say **months**. Which is correct? | Data model | Y | | | | L-12, UC-02 |
-| Q-09 | The ASN and return webhooks carry status only. Can received quantities per SKU and condition be added, so we don't have to call the receiving note / returns-receive API? | Webhook | N | | | | S2 #28, #31, UC-08, UC-16 |
+| Q-09 | The ASN and return webhooks carry status only. Can received quantities be added? | Webhook | N | — | **Not needed:** PIC accepts fetching quantities by API | 2026-11-13 | S2 #28, #31, UC-08, UC-16 |
 | Q-10 | Doc fixes: Create Returns Order has a mandatory field named `01HTPRXX7CJ3BFGXWQTG275SBB`; Direct RTS has `01HYD3H7Z5KMAEP89ME3QJRPJ6`; COD statement paths show `/`; zipcode path shows `/pi/v2/…`; Cancel Returns Order has no documented response. What are the correct values? | API behaviour | N | | | | S2 #3 |
 | Q-11 | After Create Product, does Boxme ops need to approve the product before it can be used in an ASN or order? How long does it take, and does Product Update Push tell us when it's approved? | API behaviour | N | | | | UC-02, UC-05 |
 | Q-12 | Webhooks are set up per seller account in the web portal. Can PowerSell register one webhook for all its sellers (partner app), or by API? | Webhook | N | | | | S2 #27, UC-18 |
@@ -78,9 +80,9 @@
 |---|---|---|---|---|---|
 | R-01 | Rate limits per IP (Create Order 2 rps ≈ 7,200 orders/hour across **all** PowerSell sellers on Boxme; Get Order 60/min) | UC-09, UC-13 | Queue order creation; use Order Status Push instead of polling; ask for higher limits (Q-02) | [TBD] | Open |
 | R-02 | Get Stock Available: max 20 SKUs per call, 1 rps (≈ 2 min for a 2,000-SKU full check) | UC-04 | Use Available Stock Change Push day to day; full check only for reconciliation | [TBD] | Open |
-| R-03 | No staging environment documented | All | Q-05; without staging, S3 tests would run in production | [TBD] | Open |
+| R-03 | No staging: testing uses a test seller account on production. Test orders and ASNs may enter the real warehouse queue | All | Agree a test plan with Boxme ops (which test orders get cancelled, who watches the queue) before S3 smoke tests | [TBD] | Open |
 | R-04 | Since 25/07/2026: IP whitelist (re-confirm every 180 days) and API keys expire after max 365 days. If missed, all calls fail (403 / 401) | All | Calendar reminders; alert on 401 / 403; one owner per seller account | [TBD] | Open |
-| R-05 | ASN and return webhooks carry no quantities | UC-08, UC-16 | Fetch receiving note (GRN) / returns-receive when status is Completed / Returned (Q-09) | [TBD] | Open |
+| R-05 | ASN and return webhooks carry no quantities | UC-08, UC-16 | Fetch receiving note (GRN) / returns-receive when status is Completed / Returned | [TBD] | Accepted by PIC 2026-11-13 |
 | R-06 | Create Product needs 27 mandatory fields, some of which PowerSell may not hold (Boxme category ID, packing material, wholesale price, GS1 flag) | UC-02 | Default rules per field (S3 check L-15) | [TBD] | Open |
 
 ---
@@ -91,7 +93,7 @@
 |---|---|---|---|
 | Partner API document | https://developers.boxme.asia/doc-393601 (full export uploaded by user) | Latest changelog 11-06-2026 | Current |
 | Endpoint inventory | Below | 2026-11-13 | Current |
-| Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, draft | Current: waiting on "varies" confirmation |
+| Evaluation scorecard | `Boxme-API-Evaluation-Scorecard.md` (Confluence: [TBD]) | 2026-11-13, confirmed | Current |
 
 ---
 
@@ -102,6 +104,7 @@
 | 2026-11-13 | New partner run started. Doc host blocked from the copilot's environment; user uploaded llms.txt index, then a full export of all 103 pages |
 | 2026-11-13 | S1 done: 61 endpoints inventoried (44 good, 9 partial, 8 missing samples) |
 | 2026-11-13 | S2 draft scorecard: 72 / Proceed with caveats. Waiting on PIC to confirm 13 "varies" rows and score rows 1, 2, 32, 33, 34 before G1 |
+| 2026-11-13 | PIC confirmed scores; total 96 / Proceed. G1 presented for decision |
 
 ---
 
