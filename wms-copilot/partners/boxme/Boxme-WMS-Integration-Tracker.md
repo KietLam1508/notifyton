@@ -28,7 +28,7 @@
 | S2 Evaluate | Done | G1 Go / no-go | Approve | WMS partner PIC | 2026-11-13 | Evaluation scorecard: 96, Proceed |
 | S3 Validate | Waiting on partner (smoke tests deferred) | G2 Logic understood | | | | System logic notes (42 checks: 13 ✅, 15 🟡, 3 🔴, 11 ❓) |
 | S4 Use-case fit | Waiting on partner | G3 Scope agreed | Hold (recommended) | | | Use-case fit (draft): ✅ 5, 🟡 5, ❓ 8 (all Must) |
-| S5 API mapping | Not started | G4 Mapping approved | | | | API mapping document |
+| S5 API mapping | In progress (draft v0.1) | G4 Mapping approved | | | | API mapping v0.1: 37 endpoints / webhooks; 96 `[TBD]`, 59 `[CONFIRM]` |
 | S6 Dev & testing | Not started | — | — | — | | Jira stories, QC test cases |
 | S7 UAT | Not started | G5 UAT sign-off | | | | UAT script |
 | S8 Launch | Not started | G6 Go-live | | | | Go-live checklist |
@@ -46,6 +46,7 @@
 | 2026-11-13 | G1 | **Approve**: proceed to S3 | WMS partner PIC | Score 96. Rate limits (R-01), testing on production (R-03) and IP / key expiry (R-04) carried as risks |
 | 2026-11-13 | S3 | Smoke tests **deferred**: PIC cannot run Postman. To be run later (by QC / dev) before G2 is decided and before S5. S4 started early with doc-based ratings, marked "(doc)" | WMS partner PIC | G2 condition 3 stays open |
 | 2026-11-13 | S4 | Brand context: brands use **both** marketplace delivery and Boxme delivery → UC-14 becomes Must, Phase 1. Webhooks are set by the brand's business user in Boxme's portal using PowerSell's user guide | WMS partner PIC | |
+| 2026-11-14 | S5 | PIC requested the API mapping before G3. Drafted as v0.1 on the proposed Phase 1 scope; open items marked `[TBD]` / `[CONFIRM]`; not for build until G3 and G4 | WMS partner PIC | Re-check scope after G3 |
 
 ---
 
@@ -122,6 +123,7 @@
 | System logic notes | `Boxme-System-Logic-Notes.md` (Confluence: [TBD]) | 2026-11-13, from doc only | Current: smoke tests not run |
 | Smoke test collection (Batch B) | Postman, personal workspace: "Boxme – S3 smoke tests (Batch B)" (uid 2708496-859b0705-c4bf-42f8-9ef1-b6ff104ade9a). API key is NOT stored in it | 2026-11-13 | Ready to run after Q-35 and IP whitelisting |
 | Use-case fit | `Boxme-Use-Case-Fit.md` (Confluence: [TBD]) | 2026-11-13, draft (doc-based, assumed brand context) | Current |
+| API mapping | `Boxme-API-Mapping.md` (Confluence: [TBD]) | v0.1, 2026-11-14 | Draft: generated from Boxme OpenAPI export; not approved |
 
 ---
 
@@ -213,3 +215,4 @@ Product and Create ASN show an error example on the endpoint itself.
 | 61 | Webhook | Abnormal Inventory Change Push | POST (to our URL) | — | Partner → PowerSell | Good | Damage / loss / cycle count reason |
 | 2026-11-13 | S4 draft: 18 use cases rated from the document (✅ 5, 🟡 6, ❓ 7 — all 7 Must, waiting on Boxme answers). Brand context assumed from S2 scores. Phase 1 = all except UC-14 (Boxme delivery → Later). G3 recommendation: Hold. 3 workarounds costed (W-01 to W-03) |
 | 2026-11-13 | PIC: both delivery types used; webhook set by brand business user via user guide. S4 updated: UC-14 Must / Phase 1 (❓ pending Q-31, Q-32); Q-32 now blocking; R-13 added (rule for which orders use Boxme delivery) |
+| 2026-11-14 | S5 draft v0.1 API mapping produced before G3 at PIC request: 6 flow groups, 31 endpoints + 6 webhooks, status mappings (ASN, order, delivery, return), enums, out of scope, open questions (18 for Boxme, 11 for dev, 4 for business). New doc inconsistency D-10 (`sku` vs `seller_sku` in Get Shipping Option) |

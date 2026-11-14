@@ -237,6 +237,7 @@ No staging results yet. Inconsistencies **inside the document**, to confirm duri
 | D-07 | Create Returns Order | Schema: items use `seller_sku`; requires `return_order_number`, `courier_tracking_number` | Doc example uses `sku` and omits those fields | Unclear which body Boxme accepts; tested in TC-S17 | L-07 | Q-10 |
 | D-08 | Create ASN | Schema: `estimate_arrived_time` is an integer timestamp | Doc example sends `"21/12/2023"` (text) | Wrong format may be rejected; TC-S06 sends a timestamp | L-13 | Q-10 |
 | D-09 | All endpoints | Missing / invalid key → `authentication_failed`, HTTP **401** (Common Errors) | Run 1 (2026-11-13): HTTP **403** `authentication_failed`, "Invalid token header. No credentials provided." Some endpoints say "Invalid Authorization header" instead | Error handling must treat 403 + `authentication_failed` as a credential problem, not only 401; don't match on message text | L-37, L-40 | — |
+| D-10 | Get Shipping Option vs Create B2C Order | Item field is `sku` in Get Shipping Option, `seller_sku` in Create B2C Order | Not tested | Same payload builder can't be reused as-is | L-04 | Q-10 |
 
 ---
 
